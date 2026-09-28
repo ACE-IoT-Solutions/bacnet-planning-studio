@@ -15,6 +15,8 @@
         <AppButton @click="openNmapImportDialog">Import Nmap</AppButton>
         <AppButton @click="fileInput?.click()">Open JSON</AppButton>
         <AppButton @click="saveJson">Save project</AppButton>
+        <AppButton @click="saveLegacyJson">Export legacy JSON</AppButton>
+        <AppButton @click="saveXlsx">Export XLSX</AppButton>
         <AppButton variant="primary" @click="saveSvg">Export SVG</AppButton>
         <AppButton :disabled="isExportingPdf" @click="openPdfExportDialog">{{ isExportingPdf ? 'Building PDF…' : 'Export PDF' }}</AppButton>
         <input ref="fileInput" class="visually-hidden" type="file" accept="application/json,.json" @change="openJson">
@@ -28,230 +30,32 @@
 
     <div class="diagram-workspace">
       <aside class="diagram-editor">
-        <div class="glass-card diagram-settings-card">
-          <div class="form-group">
-            <label for="diagram-title">Diagram title</label>
-            <input id="diagram-title" v-model="project.title" type="text" placeholder="Network condition or site name">
-          </div>
-          <div class="form-group">
-            <label for="diagram-scope">Diagram scope</label>
-            <select id="diagram-scope" v-model="project.viewMode"><option value="detailed">Detailed — all devices</option><option value="networks">Network topology — infrastructure &amp; key hosts</option></select>
-          </div>
-          <AceToggle v-model="advancedBacnetPorts" label="Advanced BACnet/IP ports" description="Configure multiple B/IP networks on one IP subnet" />
-          <AceToggle :model-value="Boolean(project.allowSplitHorizonBdt)" label="Allow split-horizon BDTs" description="Treat intentional one-way BDT entries as valid and suppress missing-mutual-peer warnings" @update:model-value="project.allowSplitHorizonBdt = $event" />
-          <div class="form-group compact-group">
-            <label for="diagram-notes">Condition / troubleshooting notes</label>
-            <textarea id="diagram-notes" v-model="project.notes" rows="3" placeholder="Describe symptoms, expected traffic, or the condition being illustrated."></textarea>
-          </div>
-          <span class="autosave-status">Saved automatically in this browser</span>
-        </div>
+        <DiagramSettingsCard v-model:advanced-bacnet-ports="advancedBacnetPorts" :project="project" />
 
         <div class="editor-section-heading">
           <div><span class="step-number">1</span><h3>Networks, overlays & devices</h3></div>
           <button class="icon-text-button" type="button" @click="addSubnet">+ Add network</button>
         </div>
 
-        <article v-for="(subnet, subnetIndex) in project.subnets" :id="`config-subnet-${subnet.id}`" :key="subnet.id" tabindex="-1" class="glass-card subnet-editor-card config-target" :class="{ 'config-target-active': activeConfigTarget === `subnet-${subnet.id}` }" :style="{ '--subnet-color': subnet.color }">
-          <div class="editor-card-header">
-            <strong>{{ subnet.name || `Subnet ${subnetIndex + 1}` }}</strong>
-            <button class="remove-button" type="button" title="Remove subnet" @click="removeSubnet(subnet.id)">Remove</button>
-          </div>
-          <div class="editor-grid two-columns">
-            <div class="form-group"><label>Name</label><input v-model="subnet.name" type="text" placeholder="Controls LAN"></div>
-            <div class="form-group"><label>Datalink type</label><select v-model="subnet.networkType"><option value="bacnet-ip">IP subnet</option><option value="mstp">BACnet MS/TP</option><option value="arcnet">BACnet ARCNET</option></select></div>
-          </div>
-          <div v-if="!subnet.networkType || subnet.networkType === 'bacnet-ip'" class="editor-grid network-address-grid">
-            <div class="form-group"><label>VLAN (optional)</label><input v-model="subnet.vlan" type="text" placeholder="10"></div>
-            <div class="form-group">
-            <label>Network address & mask</label>
-            <div class="input-row">
-              <input v-model="subnet.address" type="text" placeholder="192.168.10.0" :class="{ 'input-invalid': !subnetIsValid(subnet) }">
-              <select v-model.number="subnet.cidr" class="cidr-select">
-                <option v-for="cidr in cidrOptions" :key="cidr" :value="cidr">/{{ cidr }}</option>
-              </select>
-            </div>
-            </div>
-            <div v-if="advancedBacnetPorts" class="form-group"><label>BACnet UDP port</label><input v-model.number="subnet.udpPort" type="number" min="1" max="65535" placeholder="47808"></div>
-            <div v-if="advancedBacnetPorts" class="form-group"><label>BACnet network number</label><input v-model="subnet.bacnetNetworkNumber" type="number" min="1" max="65534" placeholder="1001"></div>
-          </div>
-          <div v-else-if="subnet.networkType === 'bacnet-sc'" class="editor-grid two-columns">
-            <div class="form-group"><label>BACnet network number</label><input v-model="subnet.bacnetNetworkNumber" type="number" min="1" max="65534" placeholder="3001"></div>
-            <AceToggle :model-value="Boolean(subnet.scDirectConnections)" label="Model direct node connections" description="Optional unicast path; hub connectivity remains the baseline" @update:model-value="subnet.scDirectConnections = $event" />
-            <span class="field-hint" style="grid-column:1/-1">BACnet/SC uses secure WebSockets over IPv4 or IPv6. A valid BACnet path requires both working IP transport to the selected hub and continuous SC hub/direct connections between nodes.</span>
-          </div>
-          <div v-else class="editor-grid two-columns">
-            <div class="form-group"><label>Upstream routed network</label><select v-model="subnet.upstreamSubnetId"><option value="">Choose upstream network</option><option v-for="upstream in upstreamNetworkOptions(subnet)" :key="upstream.id" :value="upstream.id">{{ upstream.name }} — {{ subnetCidr(upstream) }}</option></select></div>
-            <div class="form-group"><label>Routing device on upstream</label><select v-model="subnet.routerId"><option value="">Choose connected device</option><option v-for="router in routingDevicesFor(subnet)" :key="router.id" :value="router.id">{{ router.name }} — {{ router.ip || 'Address not set' }}</option></select></div>
-            <div class="form-group"><label>BACnet network number</label><input v-model="subnet.bacnetNetworkNumber" type="number" min="1" max="65534" placeholder="2001"></div>
-            <div v-if="subnet.networkType === 'mstp'" class="form-group"><label>Baud rate</label><select v-model.number="subnet.mstpBaudRate"><option v-for="baud in mstpBaudRates" :key="baud" :value="baud">{{ baud.toLocaleString() }} baud</option></select></div>
-            <div v-else class="form-group"><label>Data rate</label><select v-model.number="subnet.arcnetDataRate"><option :value="156">156.25 kbps</option><option :value="2500">2.5 Mbps</option><option :value="5000">5 Mbps</option><option :value="10000">10 Mbps</option></select></div>
-            <div v-if="subnet.networkType === 'mstp'" class="form-group"><label>Max Master</label><input v-model.number="subnet.mstpMaxMaster" type="number" min="0" max="127"></div>
-          </div>
-
-          <div class="device-list-header">
-            <span>Devices ({{ subnet.devices.length }})</span>
-            <button class="icon-text-button small" type="button" @click="addDevice(subnet)">+ Device</button>
-          </div>
-          <div v-if="!subnet.devices.length" class="empty-editor-state">No devices yet. Add the equipment involved in this condition.</div>
-          <div v-for="device in subnet.devices" :id="`config-device-${device.id}`" :key="device.id" tabindex="-1" class="device-editor-block config-target" :class="{ 'config-target-active': activeConfigTarget === `device-${device.id}` }">
-            <div class="device-editor-row">
-              <div class="device-fields">
-                <input v-model="device.name" type="text" aria-label="Device name" placeholder="Device name">
-                <select v-model="device.kind" aria-label="Device type">
-                  <option v-for="option in deviceKindOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-                </select>
-                <span class="device-address-count">{{ device.nics.length }} NIC{{ device.nics.length === 1 ? '' : 's' }} · {{ addressCount(device) }} address{{ addressCount(device) === 1 ? '' : 'es' }}</span>
-              </div>
-              <button class="row-remove-button" type="button" title="Remove device" @click="removeDevice(subnet, device.id)">×</button>
-            </div>
-            <div class="device-secondary-actions">
-              <button class="device-move-button" type="button" :disabled="!movableSubnets(subnet).length" :title="movableSubnets(subnet).length ? 'Move this device and its local addresses to another subnet' : 'Add another compatible subnet before moving this device'" @click="openMoveDeviceDialog(device, subnet)">Move to subnet</button>
-            </div>
-            <AceToggle :model-value="Boolean(device.requiredForRouting)" label="BACnet router / bridge between datalinks" description="Route between services or networks assigned to this device's NICs" @update:model-value="device.requiredForRouting = $event" />
-            <AceToggle v-if="(!subnet.networkType || subnet.networkType === 'bacnet-ip') && device.nics.some(nic => nic.bacnetIpEnabled)" :model-value="Boolean(device.bbmdEnabled)" label="Hosts a BBMD service" description="This BACnet device also distributes BACnet/IP broadcasts" @update:model-value="setDeviceBbmd(device, $event)" />
-            <details v-if="device.bbmdEnabled" class="device-relationship-editor bdt-peer-editor">
-              <summary>
-                <span>Broadcast Distribution Table</span>
-                <em>{{ device.bdtPeerDeviceIds?.length ?? 0 }} {{ (device.bdtPeerDeviceIds?.length ?? 0) === 1 ? 'peer' : 'peers' }}</em>
-              </summary>
-              <div class="bdt-peer-editor-body">
-                <span class="field-hint">Select a BBMD to create or remove a mutual BDT relationship.</span>
-                <span v-if="!otherBbmdDevices(device, subnet.id).length" class="field-hint">Enable BBMD service on a device in another IP subnet to create BDT relationships.</span>
-                <div v-else class="subnet-checkboxes">
-                  <label v-for="peer in otherBbmdDevices(device, subnet.id)" :key="peer.device.id" class="checkbox-chip">
-                    <input type="checkbox" :checked="isBdtPeer(device, peer.device.id)" @change="toggleBdtPeer(device, peer.device.id)">
-                    <span>{{ peer.device.name }} · {{ peer.subnet.name }}</span>
-                  </label>
-                </div>
-              </div>
-            </details>
-            <div v-if="(!subnet.networkType || subnet.networkType === 'bacnet-ip') && device.nics.some(nic => nic.bacnetIpEnabled)" class="device-relationship-editor">
-              <label :for="`fdr-target-${device.id}`">Foreign Device Registration</label>
-              <select :id="`fdr-target-${device.id}`" v-model="device.foreignDeviceBbmdId">
-                <option value="">Not registered as a foreign device</option>
-                <option v-for="target in foreignBbmdOptions(device, subnet.id)" :key="target.device.id" :value="target.device.id">{{ target.device.name }} · {{ target.subnet.name }}</option>
-              </select>
-              <span class="field-hint">Registers this device with a BBMD on another IP subnet and adds it to that BBMD's Foreign Device Table.</span>
-            </div>
-            <div class="interface-summary"><span>Network interfaces and assigned addresses</span><button type="button" @click="addDeviceNic(device, subnet.id)">+ Add NIC</button></div>
-            <div v-for="(nic, nicIndex) in device.nics" :key="nic.id" class="nic-editor-card">
-              <div class="nic-editor-heading">
-                <input v-model="nic.name" type="text" aria-label="NIC name" placeholder="NIC name">
-                <button type="button" @click="addNicAddress(nic, subnet.id)">+ Address</button>
-                <button class="row-remove-button" type="button" :disabled="device.nics.length <= 1" title="Remove NIC" @click="removeDeviceNic(device, nic.id)">×</button>
-              </div>
-              <div class="device-service-selection"><AceCheckbox :model-value="Boolean(nic.bacnetIpEnabled)" label="BACnet/IP" @update:model-value="nic.bacnetIpEnabled = $event" /><AceCheckbox :model-value="Boolean(nic.bacnetScEnabled)" label="BACnet/SC" @update:model-value="nic.bacnetScEnabled = $event" /></div>
-              <div v-if="nic.bacnetScEnabled" class="form-group compact-group sc-hub-assignment"><label>SC role</label><select v-model="nic.scHubRole"><option value="node">Node</option><option value="hub">Hub</option><option value="ha-hub">HA hub</option></select><template v-if="nic.scHubRole === 'hub' || nic.scHubRole === 'ha-hub'"><label>Hub WebSocket URI</label><input v-model="nic.scHubUri" type="text" placeholder="wss://device-hub.example.com"><template v-if="nic.scHubRole === 'ha-hub'"><label>Failover hub URI</label><input v-model="nic.scFailoverHubUri" type="text" placeholder="wss://device-hub-failover.example.com"></template></template><label>{{ nic.scHubRole === 'node' ? 'Hub assignment' : 'Upstream federating hub (optional)' }}</label><select v-model="nic.scHubId"><option value="">{{ nic.scHubRole === 'node' ? 'Choose hub' : 'No upstream — root hub' }}</option><option v-for="hub in scHubsForNic(nic)" :key="hub.id" :value="hub.id">{{ hub.name }} — {{ hub.label }}</option></select><AceToggle :model-value="Boolean(nic.scHubL3Reachable)" label="L3/TLS path verified" @update:model-value="nic.scHubL3Reachable = $event" /></div>
-              <div v-for="(address, addressIndex) in nic.addresses" :key="address.id" class="interface-editor-row">
-                <input v-model="address.label" type="text" aria-label="Address label" :placeholder="addressIndex === 0 && nicIndex === 0 ? 'Primary' : 'Address label'">
-                <select v-model="address.subnetId" aria-label="Address network">
-                  <option value="">Choose network</option>
-                  <option v-for="optionSubnet in compatibleAddressNetworks(subnet)" :key="optionSubnet.id" :value="optionSubnet.id">{{ optionSubnet.name }}</option>
-                </select>
-                <input v-model="address.ip" type="text" :aria-label="addressFieldLabel(address)" :placeholder="addressFieldLabel(address)" :class="addressEntryClass(address)">
-                <button class="row-remove-button" type="button" :disabled="nic.addresses.length <= 1" title="Remove address" @click="removeNicAddress(nic, address.id)">×</button>
-              </div>
-            </div>
-          </div>
-        </article>
-
+        <SubnetEditorCard v-for="(subnet, subnetIndex) in project.subnets" :key="subnet.id" :project="project" :subnet="subnet" :subnet-index="subnetIndex" :advanced-bacnet-ports="advancedBacnetPorts" :active-config-target="activeConfigTarget" :cidr-options="cidrOptions" :mstp-baud-rates="mstpBaudRates" :device-kind-options="deviceKindOptions" :actions="subnetEditorActions" />
         <div class="editor-section-heading infrastructure-heading">
           <div><span class="step-number">2</span><h3>IT infrastructure</h3></div>
           <button class="icon-text-button" type="button" @click="addInfrastructure">+ Add infrastructure</button>
         </div>
         <div v-if="!project.infrastructure.length" class="glass-card empty-editor-state infrastructure-empty">Add routers, switches, firewalls, gateways, or BACnet/SC hubs and connect them to the relevant networks. BBMD service is configured on BACnet devices above.</div>
-        <article v-for="item in project.infrastructure" :id="`config-infrastructure-${item.id}`" :key="item.id" tabindex="-1" class="glass-card infrastructure-editor-card config-target" :class="{ 'config-target-active': activeConfigTarget === `infrastructure-${item.id}` }">
-          <div class="editor-card-header">
-            <strong>{{ item.name || 'Unnamed infrastructure' }}</strong>
-            <button class="remove-button" type="button" @click="removeInfrastructure(item.id)">Remove</button>
-          </div>
-          <div class="editor-grid two-columns">
-            <div class="form-group"><label>Name</label><input v-model="item.name" type="text" placeholder="Core Router"></div>
-            <div class="form-group"><label>Type</label><select v-model="item.kind"><option v-for="option in infrastructureKindOptions" :key="option.value" :value="option.value">{{ option.label }}</option></select></div>
-          </div>
-          <div class="form-group"><label>Management / interface IP (optional)</label><input v-model="item.ip" type="text" placeholder="10.0.0.1" :class="{ 'input-invalid': item.ip && !isIpValid(item.ip) }"></div>
-          <template v-if="item.kind === 'sc-hub' || item.kind === 'sc-hub-cluster'">
-            <div class="form-group"><label>Primary hub WebSocket URI</label><input v-model="item.uri" type="text" placeholder="wss://sc-hub.example.com"></div>
-            <div v-if="item.kind === 'sc-hub-cluster'" class="editor-grid two-columns"><div class="form-group"><label>Failover hub IP</label><input v-model="item.failoverIp" type="text" placeholder="10.0.1.10"></div><div class="form-group"><label>Failover hub WebSocket URI</label><input v-model="item.failoverUri" type="text" placeholder="wss://sc-failover.example.com"></div></div>
-            <div class="form-group compact-group"><label>Connected physical IP networks</label><div class="subnet-checkboxes"><label v-for="subnet in ipSubnets" :key="subnet.id" class="checkbox-chip"><input v-model="item.subnetIds" type="checkbox" :value="subnet.id"><span :style="{ '--chip-color': subnet.color }">{{ subnet.name }}</span></label></div></div>
-            <div class="form-group compact-group"><label>Connections to other SC hubs</label><div class="subnet-checkboxes"><label v-for="peer in otherScHubs(item.id)" :key="peer.id" class="checkbox-chip"><input v-model="item.peerInfrastructureIds" type="checkbox" :value="peer.id"><span>{{ peer.name }}</span></label></div></div>
-          </template>
-          <div v-else class="form-group compact-group">
-            <label>Connected BACnet/IP subnets</label>
-            <div v-if="project.subnets.length" class="subnet-checkboxes">
-              <label v-for="subnet in ipSubnets" :key="subnet.id" class="checkbox-chip">
-                <input v-model="item.subnetIds" type="checkbox" :value="subnet.id">
-                <span :style="{ '--chip-color': subnet.color }">{{ subnet.name || 'Unnamed subnet' }}</span>
-              </label>
-            </div>
-            <span v-else class="field-hint">Add a subnet before making connections.</span>
-          </div>
-          <div class="form-group compact-group"><label>Notes</label><input v-model="item.notes" type="text" placeholder="Interface, ACL, NAT, or routing detail"></div>
-        </article>
+        <InfrastructureEditorCard v-for="item in project.infrastructure" :key="item.id" :item="item" :project="project" :ip-subnets="ipSubnets" :active="activeConfigTarget === `infrastructure-${item.id}`" @remove="removeInfrastructure" />
 
         <div class="editor-section-heading paths-heading">
           <div><span class="step-number">3</span><h3>Connectivity tests</h3></div>
           <button class="icon-text-button" type="button" :disabled="endpointOptions.length < 2" @click="addPath">+ Add path</button>
         </div>
         <div v-if="!project.paths.length" class="glass-card empty-editor-state infrastructure-empty">Add a ping or service test, order its endpoints and intermediate hops, then mark the observed result.</div>
-        <article v-for="path in project.paths" :id="`config-path-${path.id}`" :key="path.id" tabindex="-1" class="glass-card path-editor-card config-target" :class="[path.outcome, { 'config-target-active': activeConfigTarget === `path-${path.id}` }]">
-          <div class="editor-card-header">
-            <strong>{{ path.name || 'Unnamed connectivity test' }}</strong>
-            <button class="remove-button" type="button" @click="removePath(path.id)">Remove</button>
-          </div>
-          <div class="editor-grid path-settings-grid">
-            <div class="form-group"><label>Test name</label><input v-model="path.name" type="text" placeholder="Gateway ping"></div>
-            <div class="form-group"><label>Test type</label><select v-model="path.testType" @change="handleTestTypeChange(path)"><option value="ping">Ping (ICMP)</option><option value="bacnet-whois">BACnet Who-Is</option><option value="custom">Custom service</option></select></div>
-            <div class="form-group"><label>Observed result</label><select v-model="path.outcome"><option value="success">Successful</option><option value="failure">Unsuccessful</option></select></div>
-          </div>
-          <div v-if="path.testType === 'custom'" class="form-group"><label>Protocol / service</label><input v-model="path.protocol" type="text" placeholder="BACnet ReadProperty, TCP 47808, etc."></div>
-          <div v-if="path.testType === 'bacnet-whois'" class="form-group whois-broadcast-field">
-            <label>Broadcast address used</label>
-            <div class="input-row">
-              <input v-model="path.broadcastAddress" type="text" placeholder="e.g. 172.28.131.255" :class="{ 'input-invalid': !isIpValid(path.broadcastAddress) }">
-              <input v-if="advancedBacnetPorts" v-model.number="path.udpPort" class="whois-port-input" type="number" min="1" max="65535" aria-label="Who-Is destination UDP port" placeholder="47808">
-              <button type="button" class="use-broadcast-button" :disabled="!suggestedWhoIsBroadcast(path)" @click="useSuggestedBroadcast(path)">Use subnet broadcast</button>
-            </div>
-            <span class="field-hint">Record the actual limited or directed broadcast and UDP destination port used for this Who-Is.</span>
-          </div>
-          <label>Ordered path</label>
-          <div class="path-hop-list">
-            <div v-for="(_, hopIndex) in path.hops" :key="`${path.id}-${hopIndex}`" class="path-hop-row">
-              <span>{{ hopIndex === 0 ? 'FROM' : hopIndex === path.hops.length - 1 ? 'TO' : `VIA ${hopIndex}` }}</span>
-              <select v-model="path.hops[hopIndex]" @change="hopIndex === 0 && syncWhoIsBroadcast(path)">
-                <option value="">Choose endpoint</option>
-                <option v-for="endpoint in endpointOptions" :key="endpoint.id" :value="endpoint.id">{{ endpoint.label }}</option>
-              </select>
-              <button class="row-remove-button" type="button" :disabled="path.hops.length <= 2" title="Remove hop" @click="removePathHop(path, hopIndex)">×</button>
-            </div>
-          </div>
-          <button class="add-hop-button" type="button" @click="addPathHop(path)">+ Add intermediate hop</button>
-          <div class="form-group compact-group path-notes"><label>Notes</label><input v-model="path.notes" type="text" placeholder="Timeout, ACL, expected route, or test context"></div>
-        </article>
+        <TestPathEditorCard v-for="path in project.paths" :key="path.id" :path="path" :endpoint-options="endpointOptions" :advanced-bacnet-ports="advancedBacnetPorts" :active="activeConfigTarget === `path-${path.id}`" :suggested-broadcast="suggestedWhoIsBroadcast(path)" @remove="removePath" @test-type-change="handleTestTypeChange" @sync-broadcast="syncWhoIsBroadcast" />
+        <PhysicalLayerEditor :project="project" />
       </aside>
 
       <main class="diagram-preview-column">
-        <div v-if="diagnostics.length" class="diagnostics-panel" aria-label="Diagram findings">
-          <div class="diagnostics-summary">
-            <span><strong>{{ diagnostics.length }}</strong> findings in {{ diagnosticGroups.length }} {{ diagnosticGroups.length === 1 ? 'class' : 'classes' }}</span>
-            <small>Expand a class to inspect individual items.</small>
-          </div>
-          <details v-for="group in diagnosticGroups" :key="group.key" :class="['diagnostic-group', group.level]">
-            <summary>
-              <span class="diagnostic-group-icon">{{ group.level === 'error' ? '!' : '△' }}</span>
-              <span class="diagnostic-group-copy"><strong>{{ group.title }}</strong><small>{{ group.description }}</small></span>
-              <span class="diagnostic-group-counts">
-                <em v-if="group.errorCount" class="error">{{ group.errorCount }} {{ group.errorCount === 1 ? 'error' : 'errors' }}</em>
-                <em v-if="group.warningCount" class="warning">{{ group.warningCount }} {{ group.warningCount === 1 ? 'warning' : 'warnings' }}</em>
-              </span>
-            </summary>
-            <div class="diagnostic-group-items">
-              <div v-for="diagnostic in group.items" :key="diagnostic.message" :class="['diagnostic-item', diagnostic.level]">
-                <span>{{ diagnostic.level === 'error' ? '!' : '△' }}</span>{{ diagnostic.message }}
-              </div>
-            </div>
-          </details>
-        </div>
+        <DiagnosticsPanel :diagnostics="diagnostics" @focus="focusDiagnostic" />
         <div class="diagram-preview-toolbar">
           <div><strong>Live preview</strong><span>{{ project.subnets.length }} subnets · {{ deviceCount }} devices · {{ project.infrastructure.length }} infrastructure · {{ project.paths.length }} tests</span></div>
           <div class="diagram-preview-controls">
@@ -271,6 +75,7 @@
             <select v-if="bbmdReport.devices.length && (relationshipMode === 'highlights' || relationshipMode === 'focused')" v-model="focusedBbmdId" aria-label="Focused BBMD">
               <option v-for="bbmd in bbmdReport.devices" :key="bbmd.id" :value="bbmd.id">{{ bbmd.name }} · {{ bbmd.endpoint }}</option>
             </select>
+            <label v-if="project.physical.links.length && project.viewMode !== 'physical'" class="physical-overlay-toggle"><input v-model="showPhysicalOverlay" type="checkbox"> Cabling overlay</label>
             <button type="button" class="reset-button" @click="resetProject">Reset example</button>
           </div>
         </div>
@@ -280,122 +85,8 @@
           <small>{{ relationshipMode === 'highlights' ? 'Cards are highlighted without drawing BDT edges.' : 'Only relationships involving this BBMD are drawn.' }} Click another BBMD card to focus it.</small>
         </div>
         <div class="diagram-scroll-frame">
-          <svg ref="diagramSvg" class="network-diagram-svg" :viewBox="`0 0 ${canvasWidth} ${canvasHeight}`" :width="canvasWidth" :height="canvasHeight" xmlns="http://www.w3.org/2000/svg" role="img" :aria-label="project.title">
-            <defs>
-              <marker id="path-arrow-success" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#14ae5c" /></marker>
-              <marker id="path-arrow-failure" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#df1219" /></marker>
-              <marker id="bdt-arrow" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#a78bfa" /></marker>
-              <marker id="fdr-arrow" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#fb923c" /></marker>
-              <symbol id="ace-icon-network" viewBox="0 0 24 24"><path d="M17 3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-4v2h1a1 1 0 0 1 1 1h7v2h-7a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1H2v-2h7a1 1 0 0 1 1-1h1v-2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10Z" /></symbol>
-              <symbol id="ace-icon-subnet" viewBox="0 0 24 24"><path d="M23.25 12.75v-1.5h-10.5V9h2.625A1.125 1.125 0 0 0 16.5 7.875v-6A1.125 1.125 0 0 0 15.375.75h-6.75A1.125 1.125 0 0 0 7.5 1.875v6A1.125 1.125 0 0 0 8.625 9h2.625v2.25H.75v1.5H4.5V15H1.94a1.125 1.125 0 0 0-1.125 1.125v6A1.125 1.125 0 0 0 1.94 23.25h6.685A1.125 1.125 0 0 0 9.75 22.125v-6A1.125 1.125 0 0 0 8.625 15H6v-2.25h12V15h-2.625a1.125 1.125 0 0 0-1.125 1.125v6a1.125 1.125 0 0 0 1.125 1.125h6.75a1.125 1.125 0 0 0 1.125-1.125v-6A1.125 1.125 0 0 0 22.125 15H19.5v-2.25h3.75ZM9 2.25h6V7.5H9Zm-.75 19.5H2.315V16.5H8.25Zm13.5 0h-6V16.5h6Z" /></symbol>
-              <symbol id="ace-icon-device" viewBox="0 0 24 24"><path d="M13 18h1a1 1 0 0 1 1 1h7v2h-7a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1H2v-2h7a1 1 0 0 1 1-1h1v-2H8a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-3v2Zm0-12h1V4h-1v2ZM9 4v2h2V4H9Zm0 4v2h2V8H9Zm0 4v2h2v-2H9Z" /></symbol>
-              <symbol id="ace-icon-router" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2Zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Zm1-7v3h2l-3 3-3-3h2v-3H5v2l-3-3 3-3v2h6V8H9l3-3 3 3h-2v3h6V9l3 3-3 3v-2h-6Z" /></symbol>
-            </defs>
-            <rect class="export-bg" width="100%" height="100%" rx="14" />
-            <text class="export-title" x="40" y="42">{{ clipped(project.title || 'Untitled network diagram', 70) }}</text>
-            <text v-if="project.notes" class="export-notes" x="40" y="67">{{ clipped(project.notes, 130) }}</text>
-            <text class="layer-label" x="24" y="102">INFRASTRUCTURE</text>
-            <text class="layer-label" x="24" :y="subnetY - 10">ROUTED BACNET DATALINKS</text>
-            <text v-if="ipHostNodes.length" class="layer-label" x="24" :y="ipHostY - 10">IP DEVICES &amp; ROUTERS</text>
-            <text v-if="fieldSegments.length" class="layer-label" x="24" :y="fieldBusY - 10">ROUTED FIELD BUSES</text>
-            <text v-if="fieldHostNodes.length" class="layer-label" x="24" :y="fieldHostY - 10">FIELD DEVICES</text>
-
-            <g v-for="(item, index) in project.infrastructure" :key="`preview-${item.id}`">
-              <g v-for="subnetId in validConnections(item)" :key="`${item.id}-${subnetId}`">
-                <title>{{ infrastructureConnectionLabel(item, subnetId) }}</title>
-                <path :class="['connection', connectionKindClass(item)]" :d="connectionPath(index, item.id, subnetId)" />
-                <circle :class="['connection-dot', `${connectionKindClass(item)}-dot`]" :cx="connectionTargetX(item.id, subnetId)" :cy="connectionTargetY(subnetId)" r="4" />
-              </g>
-              <g class="diagram-node-action" role="button" tabindex="0" :aria-label="`Edit infrastructure ${item.name || 'Unnamed infrastructure'}`" :transform="`translate(${infrastructureX(index) - 75}, ${infrastructureY(index)})`" @click="focusConfig('infrastructure', item.id)" @keydown.enter.prevent="focusConfig('infrastructure', item.id)" @keydown.space.prevent="focusConfig('infrastructure', item.id)">
-                <title>{{ item.name }}{{ item.ip ? ` — ${item.ip}` : '' }}</title>
-                <rect class="infra-box" width="150" height="72" rx="10" />
-              <text class="infra-type" x="12" y="18">{{ item.kind.toUpperCase() }}</text>
-                <use :href="item.kind === 'router' || item.kind === 'gateway' ? '#ace-icon-router' : '#ace-icon-network'" class="ace-node-icon infra-node-icon" x="116" y="12" width="22" height="22" />
-                <text class="infra-name" x="12" y="39">{{ clipped(item.name || 'Unnamed', 20) }}</text>
-                <text v-if="item.ip" class="infra-ip" x="12" y="58">{{ item.ip }}</text>
-              </g>
-            </g>
-
-            <g v-for="segment in fieldSegments" :key="`route-${segment.id}`">
-              <path v-if="segment.upstreamSubnetId" class="connection field-bus-route" :d="fieldBusRoutePath(segment)" />
-              <text v-if="segment.routerId" class="address-link-label" :x="networkCenter(segment.id)" :y="networkY(segment) - 18" text-anchor="middle">via {{ clipped(routerName(segment.routerId), 28) }}</text>
-            </g>
-
-            <g v-for="link in addressLinks" :key="link.id">
-              <title>{{ link.label }}</title>
-              <path class="address-link" :d="link.path" :stroke="link.color" />
-              <circle class="address-endpoint" :cx="link.startX" :cy="link.startY" r="3.5" :fill="link.color" />
-              <circle class="address-endpoint" :cx="link.endX" :cy="link.endY" r="3.5" :fill="link.color" />
-            </g>
-            <g v-for="link in scLinks" :key="link.id">
-              <title>{{ link.label }}</title>
-              <path class="sc-service-link" :d="link.path" />
-              <circle class="sc-service-endpoint" :cx="link.startX" :cy="link.startY" r="3.5" />
-              <circle class="sc-service-endpoint" :cx="link.endX" :cy="link.endY" r="3.5" />
-            </g>
-            <g v-for="link in displayedBdtLinks" :key="link.id">
-              <title>{{ link.label }}</title>
-              <path class="bdt-link" :d="link.path" :marker-end="link.mutual ? undefined : 'url(#bdt-arrow)'" />
-              <circle class="bdt-endpoint" :cx="link.startX" :cy="link.startY" r="4" />
-              <circle class="bdt-endpoint" :cx="link.endX" :cy="link.endY" r="4" />
-              <text class="relationship-link-label bdt" :x="link.labelX" :y="link.labelY" text-anchor="middle">{{ link.mutual ? 'MUTUAL BDT' : 'BDT ENTRY' }}</text>
-            </g>
-            <g v-for="link in displayedFdrLinks" :key="link.id">
-              <title>{{ link.label }}</title>
-              <path class="fdr-link" :d="link.path" marker-end="url(#fdr-arrow)" />
-              <circle class="fdr-endpoint" :cx="link.startX" :cy="link.startY" r="4" />
-              <text class="relationship-link-label fdr" :x="link.labelX" :y="link.labelY" text-anchor="middle">FDR</text>
-            </g>
-
-            <g v-for="(subnet, subnetIndex) in project.subnets" :key="`preview-${subnet.id}`" class="diagram-node-action" role="button" tabindex="0" :aria-label="`Edit network ${subnet.name || `Subnet ${subnetIndex + 1}`}`" :transform="`translate(${networkX(subnet)}, ${networkY(subnet)})`" @click="focusConfig('subnet', subnet.id)" @keydown.enter.prevent="focusConfig('subnet', subnet.id)" @keydown.space.prevent="focusConfig('subnet', subnet.id)">
-              <title>{{ subnet.name }} — {{ subnetCidr(subnet) }}{{ subnet.vlan ? ` — VLAN ${subnet.vlan}` : '' }}</title>
-              <rect class="subnet-box" :width="subnetWidth" :height="subnetHeight" rx="14" :stroke="subnet.color" />
-              <path class="subnet-accent" :d="roundedTopAccentPath(subnetWidth)" :style="{ '--subnet-accent-color': subnet.color }" />
-              <use :href="(!subnet.networkType || subnet.networkType === 'bacnet-ip') ? '#ace-icon-subnet' : '#ace-icon-network'" class="ace-node-icon" x="15" y="17" width="22" height="22" :style="{ color: subnet.color }" />
-              <text class="node-category" x="44" y="25">{{ networkDiagramLabel(subnet) }}</text>
-              <text class="subnet-name" x="16" y="52">{{ clipped(subnet.name || `Subnet ${subnetIndex + 1}`, 27) }}</text>
-              <text class="subnet-address" x="16" y="72">{{ subnetCidr(subnet) }}</text>
-              <text v-if="subnet.vlan" class="subnet-meta" :x="subnetWidth - 16" y="25" text-anchor="end">VLAN {{ clipped(subnet.vlan, 8) }}</text>
-              <text class="subnet-meta subnet-footer-meta" x="16" y="92">{{ subnetMetaLabel(subnet) }}</text>
-            </g>
-
-            <g v-for="(host, hostIndex) in hostNodes" :key="`host-${host.device.id}`" :class="['diagram-node-action', hostRelationshipClass(host.device)]" role="button" tabindex="0" :aria-label="`Edit device ${host.device.name || 'Unnamed device'}`" :transform="`translate(${hostX(host, hostIndex)}, ${hostYFor(host)})`" @click="activateHostNode(host.device)" @keydown.enter.prevent="activateHostNode(host.device)" @keydown.space.prevent="activateHostNode(host.device)">
-              <title>{{ deviceTooltip(host.device) }}</title>
-              <rect class="host-box" :width="hostWidth" :height="hostHeight" rx="12" />
-              <text class="node-category" x="16" y="21">{{ deviceServiceLabel(host.device) }}</text>
-              <circle class="device-icon" cx="25" cy="45" r="15" />
-              <use :href="host.device.requiredForRouting ? '#ace-icon-router' : host.device.bbmdEnabled ? '#ace-icon-network' : '#ace-icon-device'" class="ace-node-icon host-node-icon" x="15" y="35" width="20" height="20" />
-              <text class="device-name" x="47" y="42">{{ clipped(host.device.name || 'Unnamed device', 25) }}</text>
-              <text class="device-kind" x="47" y="58">{{ host.device.kind }}</text>
-              <g v-for="(row, addressIndex) in hostAddressRows(host.device)" :key="row.id">
-                <circle :cx="18" :cy="77 + addressIndex * 30" r="3" :fill="row.color" />
-                <text class="host-address-label" x="28" :y="80 + addressIndex * 30">{{ clipped(row.label, 38) }}</text>
-                <text class="host-address-summary" x="28" :y="93 + addressIndex * 30">{{ row.address || 'Address not set' }}</text>
-              </g>
-              <rect class="host-count-badge" :x="hostWidth - 61" y="10" width="47" height="18" rx="9" />
-              <text class="host-count-text" :x="hostWidth - 37.5" y="22" text-anchor="middle">{{ host.device.nics.length }} NIC / {{ addressCount(host.device) }} addr</text>
-              <text v-if="hostRelationshipBadge(host.device)" class="host-relationship-badge" :x="hostWidth - 14" y="43" text-anchor="end">{{ hostRelationshipBadge(host.device) }}</text>
-            </g>
-            <g v-for="segment in pathSegments" :key="segment.id" class="test-path-group">
-              <title>{{ segment.label }}</title>
-              <path :class="['test-path', segment.outcome]" :d="segment.path" :marker-end="`url(#path-arrow-${segment.outcome})`" />
-            </g>
-            <g v-if="pathLegends.length">
-              <text class="layer-label" x="40" :y="legendStart - 14">CONNECTIVITY TESTS</text>
-              <g v-for="legend in pathLegends" :key="`legend-${legend.id}`" class="diagram-node-action" role="button" tabindex="0" :aria-label="`Edit connectivity test ${legend.name}`" :transform="`translate(${legend.x}, ${legend.y})`" @click="focusConfig('path', legend.id)" @keydown.enter.prevent="focusConfig('path', legend.id)" @keydown.space.prevent="focusConfig('path', legend.id)">
-                <rect :class="['path-legend-bg', legend.outcome]" :width="legendCardWidth" :height="legendCardHeight(legend)" rx="9" />
-                <circle :class="['path-legend-dot', legend.outcome]" cx="16" cy="17" r="4" />
-                <text class="path-legend-title" x="28" y="21">{{ clipped(`${legend.name} · ${legend.protocol}`, legendTextLimit - 10) }}</text>
-                <rect :class="['path-result-badge', legend.outcome]" :x="legendCardWidth - 64" y="8" width="50" height="19" rx="9.5" />
-                <text :class="['path-result-text', legend.outcome]" :x="legendCardWidth - 39" y="21" text-anchor="middle">{{ legend.outcome === 'success' ? 'PASS' : 'FAIL' }}</text>
-                <g v-for="(row, rowIndex) in legend.rows" :key="`${legend.id}-${row.label}`">
-                  <text class="path-route-label" x="16" :y="43 + rowIndex * 19">{{ row.label }}</text>
-                  <text class="path-route-text" x="76" :y="43 + rowIndex * 19">{{ clipped(row.value, legendTextLimit - 3) }}</text>
-                </g>
-              </g>
-            </g>
-            <text class="footer-label export-footer" x="40" :y="canvasHeight - 22">BACnet Studio by ACE IoT · https://ace-iot-solutions.github.io/bacnet-subnetting-primer/</text>
-          </svg>
+          <PhysicalDiagramSvg v-if="project.viewMode === 'physical'" ref="physicalDiagram" :project="project" :highlighted-targets="diagnosticTargetKeys" @focus="focusConfig" />
+          <LogicalDiagramSvg v-else ref="logicalDiagram" :model="logicalDiagramModel" />
         </div>
       </main>
     </div>
@@ -452,6 +143,14 @@
               <a href="https://nmap.org/book/man-host-discovery.html" target="_blank" rel="noopener noreferrer">Nmap host-discovery reference</a>
               <AppButton size="sm" @click="openNmapImportFromGuide">Open Nmap importer</AppButton>
             </div>
+          </div>
+        </section>
+        <section class="diagram-guide-step">
+          <span class="diagram-guide-number">4</span>
+          <div>
+            <h4>Model the physical layer</h4>
+            <p>Enable <strong>Physical modeling</strong> in Step 4, create the building and closet hierarchy, generate switch and patch-panel ports, then connect each device NIC. Use the physical view to inspect cable paths.</p>
+            <ul><li>Set access and trunk VLANs, media, reach, and PoE capacity.</li><li>Build ordered MS/TP or ALC ARC156 chains with end termination and segment budgets.</li><li>Export the cable schedule and port map to XLSX, or export a legacy v1 JSON without physical data.</li></ul>
           </div>
         </section>
       </div>
@@ -612,6 +311,10 @@
         <AceToggle v-model="includeBbmdTablesInPdf" label="Include BBMD table pages" :description="`Add a peering summary and individual BDT sections for ${bbmdReport.devices.length} BBMD ${bbmdReport.devices.length === 1 ? 'device' : 'devices'}`" />
         <span>Table pages use a compact, paginated schedule so large BBMD estates remain readable even when diagram edges are hidden.</span>
       </div>
+      <div v-if="project.physical.links.length || project.physical.mstpSegments.length || project.physical.arcnetSegments.length" class="pdf-bbmd-option">
+        <AceToggle v-model="includeCableScheduleInPdf" label="Include cable schedule pages" />
+        <AceToggle v-model="includeSerialTablesInPdf" label="Include MS/TP and ARC156 segment tables" />
+      </div>
       <div class="pdf-export-dialog-actions">
         <AppButton @click="pdfExportDialog?.close()">Cancel</AppButton>
         <AppButton variant="primary" @click="confirmPdfExport">Export PDF</AppButton>
@@ -626,35 +329,46 @@ import AppButton from './AppButton.vue';
 import AceToggle from './AceToggle.vue';
 import AceCheckbox from './AceCheckbox.vue';
 import GlossaryLink from './GlossaryLink.vue';
+import PhysicalLayerEditor from './diagram/PhysicalLayerEditor.vue';
+import PhysicalDiagramSvg from './diagram/PhysicalDiagramSvg.vue';
+import LogicalDiagramSvg from './diagram/LogicalDiagramSvg.vue';
+import DiagramSettingsCard from './diagram/DiagramSettingsCard.vue';
+import DiagnosticsPanel from './diagram/DiagnosticsPanel.vue';
+import InfrastructureEditorCard from './diagram/InfrastructureEditorCard.vue';
+import TestPathEditorCard from './diagram/TestPathEditorCard.vue';
+import SubnetEditorCard from './diagram/SubnetEditorCard.vue';
 import { getSubnetDetails, ipToLong } from '../lib/subnet';
 import {
   groupNmapHostsBySubnet, isNmapGatewayHost, nmapHostName, parseNmapOutput, type NmapHost, type NmapSubnetGroup
 } from '../lib/nmap-import';
 import { createDiagramProjectFromAceBbmdState, parseAceBbmdState, type AceBbmdStateImport } from '../lib/ace-bbmd-state';
-import { groupDiagramDiagnostics } from '../lib/diagram-diagnostics';
 import { bbmdRelationshipClass, createBbmdReport } from '../lib/bbmd-report';
 import { appendBbmdReportPages } from '../lib/export-bbmd-pdf';
+import { appendPhysicalSchedulePages } from '../lib/export-physical-pdf';
 import {
   addressState, createDefaultProject, createDevice, createDeviceAddress, createEmptyProject, createInfrastructure, createNic, createSubnet,
-  createTestPath, getDiagramDiagnostics, getWhoIsSuggestedBroadcast, isDiagramProject, moveDeviceToSubnet, normalizeDiagramProject, subnetCidr,
-  type DeviceKind, type DiagramDevice, type DiagramDeviceAddress, type DiagramInfrastructure, type DiagramNic,
+  createTestPath, getDiagramDiagnostics, getWhoIsSuggestedBroadcast, moveDeviceToSubnet, subnetCidr,
+  type ConfigTargetKind, type DeviceKind, type DiagramDiagnostic, type DiagramDevice, type DiagramDeviceAddress, type DiagramInfrastructure, type DiagramNic,
   type DiagramProject, type DiagramSubnet, type DiagramTestPath
 } from '../lib/network-diagram';
+import { migrateDiagramProject, toLegacyDiagramProject } from '../lib/schema-migrations';
+import { DIAGRAM_STORAGE_KEY } from '../lib/storage-keys';
+import { pruneDanglingReferences } from '../lib/network-diagram-prune';
+import type { PhysicalEndpointRef } from '../lib/physical';
+import { layoutColumnCount, layoutGridPoint, layoutRowCount, layoutRowPixelWidth, type DiagramLayoutMode } from '../lib/diagram-layout';
+import { useDiagramProject } from '../composables/useDiagramProject';
 
-const STORAGE_KEY = 'aceiot-network-diagram-v1';
+const STORAGE_KEY = DIAGRAM_STORAGE_KEY;
 const LAYOUT_STORAGE_KEY = 'aceiot-network-diagram-layout-v1';
 const RELATIONSHIP_MODE_STORAGE_KEY = 'aceiot-network-diagram-relationship-view-v1';
+const PHYSICAL_OVERLAY_STORAGE_KEY = 'aceiot-network-diagram-physical-overlay-v1';
 const advancedBacnetPorts = inject<Ref<boolean>>('advancedBacnetPorts', ref(false));
 const TOOL_URL = 'https://ace-iot-solutions.github.io/bacnet-subnetting-primer/';
-const SVG_SC_LINK_STYLES = `.sc-service-link{fill:none;stroke:#2dd4bf;stroke-width:2.5;stroke-dasharray:8 6;opacity:.9}.sc-service-endpoint{fill:#2dd4bf;stroke:#121212;stroke-width:1}`;
-const SVG_BACNET_RELATIONSHIP_STYLES = `.bdt-link{fill:none;stroke:#a78bfa;stroke-width:3;stroke-dasharray:10 5}.bdt-endpoint{fill:#a78bfa;stroke:#121212;stroke-width:1}.fdr-link{fill:none;stroke:#fb923c;stroke-width:2.75;stroke-dasharray:3 6}.fdr-endpoint{fill:#fb923c;stroke:#121212;stroke-width:1}.relationship-link-label{font:700 8px Inter,Arial,sans-serif;letter-spacing:.8px;paint-order:stroke;stroke:#121212;stroke-width:4px;stroke-linejoin:round}.relationship-link-label.bdt{fill:#c4b5fd}.relationship-link-label.fdr{fill:#fdba74}.host-relationship-focus .host-box{stroke:#f8fafc;stroke-width:3}.host-relationship-mutual .host-box{stroke:#a78bfa;stroke-width:3}.host-relationship-outbound .host-box{stroke:#38bdf8;stroke-width:3}.host-relationship-inbound .host-box{stroke:#f472b6;stroke-width:3}.host-relationship-fdr .host-box{stroke:#fb923c;stroke-width:3}.host-relationship-muted{opacity:.38}.host-relationship-badge{font:700 8px Inter,Arial,sans-serif;fill:#c4b5fd;letter-spacing:.7px}`;
-const SVG_CONNECTION_STYLES = `.connection--routing{stroke:#64748b;stroke-width:2.5}.connection--bbmd{stroke:#94d8ff;stroke-width:2.75;stroke-dasharray:9 6}.connection--sc{stroke:#2dd4bf;stroke-width:2.5;stroke-dasharray:2 6}.connection--local{stroke:#a78bfa;stroke-width:2}.connection--routing-dot{fill:#64748b}.connection--bbmd-dot{fill:#94d8ff}.connection--sc-dot{fill:#2dd4bf}.connection--local-dot{fill:#a78bfa}`;
-const SVG_EXPORT_STYLES = `.export-bg{fill:#121212}.export-title{font:700 24px Montserrat,Arial,sans-serif;fill:#f8fafc}.export-notes{font:13px Inter,Arial,sans-serif;fill:#94a3b8}.layer-label{font:700 8px Inter,Arial,sans-serif;fill:#475569;letter-spacing:1.5px}.connection{fill:none;stroke:#64748b;stroke-width:2;stroke-linejoin:round}.connection-dot{fill:#94a3b8}.infra-box{fill:#1e293b;stroke:#94d8ff;stroke-width:2}.infra-type{font:700 10px Inter,Arial,sans-serif;fill:#94d8ff;letter-spacing:1px}.infra-name{font:600 13px Inter,Arial,sans-serif;fill:#f8fafc}.infra-ip{font:11px monospace;fill:#94a3b8}.subnet-box{fill:#171722;stroke-width:2}.subnet-accent{fill:none;stroke-width:6;stroke-linecap:butt}.subnet-name{font:700 15px Inter,Arial,sans-serif;fill:#f8fafc}.subnet-address{font:12px monospace;fill:#cbd5e1}.subnet-meta{font:11px Inter,Arial,sans-serif;fill:#94a3b8}.device-icon{fill:#334155}.device-name{font:600 12px Inter,Arial,sans-serif;fill:#f8fafc}.device-kind{font:9px Inter,Arial,sans-serif;fill:#94a3b8;text-transform:uppercase}.footer-label{font:10px Inter,Arial,sans-serif;fill:#64748b}.node-category{font:700 9px Inter,Arial,sans-serif;fill:#64748b;letter-spacing:1.2px}.host-box{fill:#252536;stroke:#64748b;stroke-width:1.5}.host-address-label{font:700 8px Inter,Arial,sans-serif;fill:#94a3b8}.host-address-summary{font:10px monospace;fill:#cbd5e1}.host-count-badge{fill:#0f3d39;stroke:#2dd4bf}.host-count-text{font:700 7px Inter,Arial,sans-serif;fill:#99f6e4}.address-link{fill:none;stroke-width:2}.address-endpoint{stroke:#121212;stroke-width:1}.test-path{fill:none;stroke-width:2.75;opacity:.78}.test-path.success{stroke:#14ae5c}.test-path.failure{stroke:#df1219;stroke-dasharray:8 6}.path-legend-bg{fill:#181820;stroke:#334155}.path-legend-bg.success{stroke:#14ae5c}.path-legend-bg.failure{stroke:#df1219}.path-legend-dot.success{fill:#14ae5c}.path-legend-dot.failure{fill:#df1219}.path-legend-title{font:700 10px Inter,Arial,sans-serif;fill:#f8fafc}.path-result-badge.success{fill:#0d3823;stroke:#14ae5c}.path-result-badge.failure{fill:#3d1719;stroke:#df1219}.path-result-text{font:700 8px Inter,Arial,sans-serif}.path-result-text.success{fill:#86efac}.path-result-text.failure{fill:#fca5a5}.path-route-label{font:700 8px Inter,Arial,sans-serif;fill:#64748b;letter-spacing:.6px}.path-route-text{font:10px monospace;fill:#cbd5e1}`;
-const PDF_LIGHT_STYLES = `.export-bg{fill:#fff}.export-title,.infra-name,.subnet-name,.device-name,.path-legend-title{fill:#0f172a}.export-notes,.infra-ip,.subnet-meta,.device-kind,.host-address-label,.layer-label,.node-category,.path-route-label,.footer-label{fill:#475569}.connection{stroke:#64748b;stroke-width:2.25}.connection-dot{fill:#475569}.infra-box{fill:#fff;stroke:#0369a1;stroke-width:2.25}.infra-type{fill:#075985}.subnet-box{fill:#fff;stroke-width:2.25}.subnet-address,.host-address-summary,.path-route-text{fill:#0f172a}.host-box{fill:#fff;stroke:#64748b;stroke-width:1.75}.device-icon{fill:#e2e8f0;stroke:#cbd5e1}.ace-node-icon{fill:#0f766e}.address-endpoint,.bdt-endpoint,.fdr-endpoint{stroke:#fff}.relationship-link-label{stroke:#fff}.path-legend-bg{fill:#fff;stroke:#64748b}.path-result-badge.success{fill:#dcfce7}.path-result-badge.failure{fill:#fee2e2}.path-result-text.success{fill:#166534}.path-result-text.failure{fill:#991b1b}.layer-label{font-size:9px;fill:#475569}.node-category{font-size:9.5px}.infra-type{font-size:10.5px}.infra-name{font-size:13.5px}.infra-ip{font-size:11.5px}.subnet-name{font-size:15.5px}.subnet-address,.subnet-meta{font-size:11.5px}.device-name{font-size:13px}.device-kind{font-size:9.5px}.host-address-label{font-size:9px}.host-address-summary{font-size:11px}.host-count-text{font-size:7.5px}.path-route-label{font-size:9px}.path-route-text{font-size:10.5px}.footer-label{font-size:10.5px;fill:#334155}.ace-wordmark{fill:#0f172a}.solutions-wordmark{fill:#475569}`;
-const SUBNET_ACCENT_EXPORT_STYLES = `.subnet-accent{fill:var(--subnet-accent-color);stroke:none}`;
-const project = ref<DiagramProject>(createDefaultProject());
+import { PDF_LIGHT_STYLES, SUBNET_ACCENT_EXPORT_STYLES, SVG_BACNET_RELATIONSHIP_STYLES, SVG_CONNECTION_STYLES, SVG_EXPORT_STYLES, SVG_PHYSICAL_STYLES, SVG_SC_LINK_STYLES } from '../lib/diagram-svg-styles';
+const { project, loadStoredProject, replaceProject, dispose: disposeDiagramProject } = useDiagramProject(STORAGE_KEY);
 const fileInput = ref<HTMLInputElement | null>(null);
-const diagramSvg = ref<SVGSVGElement | null>(null);
+const logicalDiagram = ref<InstanceType<typeof LogicalDiagramSvg> | null>(null);
+const physicalDiagram = ref<InstanceType<typeof PhysicalDiagramSvg> | null>(null);
 const gettingStartedDialog = ref<HTMLDialogElement | null>(null);
 const nmapImportDialog = ref<HTMLDialogElement | null>(null);
 const nmapOutput = ref('');
@@ -671,14 +385,17 @@ const pdfExportDialog = ref<HTMLDialogElement | null>(null);
 const isExportingPdf = ref(false);
 const pdfTheme = ref<'dark' | 'light'>('light');
 const includeBbmdTablesInPdf = ref(false);
-type DiagramLayoutMode = 'compact' | 'balanced' | 'wide';
+const includeCableScheduleInPdf = ref(false);
+const includeSerialTablesInPdf = ref(false);
 type DiagramRelationshipMode = 'highlights' | 'focused' | 'all' | 'hidden';
-type ConfigTargetKind = 'subnet' | 'device' | 'infrastructure' | 'path';
 const layoutMode = ref<DiagramLayoutMode>('compact');
 const relationshipMode = ref<DiagramRelationshipMode>('highlights');
 const focusedBbmdId = ref('');
+const showPhysicalOverlay = ref(localStorage.getItem(PHYSICAL_OVERLAY_STORAGE_KEY) === 'true');
 const activeConfigTarget = ref('');
+const diagnosticTargetKeys = ref<string[]>([]);
 let configTargetTimer: ReturnType<typeof window.setTimeout> | undefined;
+let diagnosticTargetTimer: ReturnType<typeof window.setTimeout> | undefined;
 const subnetWidth = 240;
 const subnetHeight = 104;
 const hostWidth = 280;
@@ -693,12 +410,18 @@ const deviceKindOptions: { value: DeviceKind; label: string }[] = [
 const infrastructureKindOptions = [
   { value: 'router', label: 'Router' }, { value: 'switch', label: 'Switch' }, { value: 'firewall', label: 'Firewall' },
   { value: 'gateway', label: 'Gateway' },
+  { value: 'media-converter', label: 'Media converter' }, { value: 'mstp-repeater', label: 'MS/TP repeater' }, { value: 'arcnet-repeater', label: 'ARC156 repeater' }, { value: 'wireless-ap', label: 'Wireless access point' },
   { value: 'sc-hub', label: 'BACnet/SC Hub' }, { value: 'sc-hub-cluster', label: 'BACnet/SC HA Hub Cluster' }
 ];
+const subnetEditorActions = {
+  removeSubnet, subnetIsValid, upstreamNetworkOptions, subnetCidr, routingDevicesFor, addDevice, addressCount,
+  movableSubnets, openMoveDeviceDialog, setDeviceBbmd, otherBbmdDevices, isBdtPeer, toggleBdtPeer, foreignBbmdOptions,
+  addDeviceNic, addNicAddress, removeDeviceNic, scHubsForNic, compatibleAddressNetworks, addressFieldLabel,
+  addressEntryClass, removeNicAddress, removeDevice, handleDiagramNetworkTypeChange
+};
 interface HostNode { device: DiagramDevice; ownerSubnet: DiagramSubnet }
 
 const diagnostics = computed(() => getDiagramDiagnostics(project.value));
-const diagnosticGroups = computed(() => groupDiagramDiagnostics(diagnostics.value));
 const bbmdReport = computed(() => createBbmdReport(project.value));
 const focusedBbmd = computed(() => bbmdReport.value.devices.find(device => device.id === focusedBbmdId.value));
 const movingDevice = computed(() => project.value.subnets.flatMap(subnet => subnet.devices).find(device => device.id === movingDeviceId.value));
@@ -733,9 +456,8 @@ const ipHostNodes = computed(() => hostNodes.value.filter(host => !host.ownerSub
 const fieldHostNodes = computed(() => hostNodes.value.filter(host => host.ownerSubnet.networkType === 'mstp' || host.ownerSubnet.networkType === 'arcnet'));
 const hasBacnetRelationships = computed(() => hostNodes.value.some(host => (host.device.bdtPeerDeviceIds ?? []).length > 0 || Boolean(host.device.foreignDeviceBbmdId)));
 const hasVisibleBacnetRelationships = computed(() => hasBacnetRelationships.value && (relationshipMode.value === 'focused' || relationshipMode.value === 'all'));
-const layoutColumnLimit = computed(() => layoutMode.value === 'compact' ? 4 : layoutMode.value === 'balanced' ? 8 : Number.POSITIVE_INFINITY);
-function columnCount(count: number) { return Math.max(1, Math.min(count || 1, layoutColumnLimit.value)); }
-function rowCount(count: number) { return count ? Math.ceil(count / columnCount(count)) : 0; }
+function columnCount(count: number) { return layoutColumnCount(count, layoutMode.value); }
+function rowCount(count: number) { return layoutRowCount(count, layoutMode.value); }
 const infrastructureRows = computed(() => rowCount(project.value.infrastructure.length));
 const routedNetworkRows = computed(() => rowCount(routedNetworks.value.length));
 const ipHostRows = computed(() => rowCount(ipHostNodes.value.length));
@@ -758,8 +480,7 @@ const endpointOptions = computed(() => [
   })))
 ]);
 function rowPixelWidth(count: number, itemWidth: number, gap: number) {
-  const columns = columnCount(count);
-  return columns * itemWidth + Math.max(0, columns - 1) * gap;
+  return layoutRowPixelWidth(count, itemWidth, gap, layoutMode.value);
 }
 const canvasWidth = computed(() => Math.max(
   960,
@@ -783,18 +504,14 @@ onMounted(() => {
   if (savedLayout === 'compact' || savedLayout === 'balanced' || savedLayout === 'wide') layoutMode.value = savedLayout;
   const savedRelationshipMode = localStorage.getItem(RELATIONSHIP_MODE_STORAGE_KEY);
   if (savedRelationshipMode === 'highlights' || savedRelationshipMode === 'focused' || savedRelationshipMode === 'all' || savedRelationshipMode === 'hidden') relationshipMode.value = savedRelationshipMode;
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try {
-      const parsed: unknown = JSON.parse(saved);
-      if (isDiagramProject(parsed)) project.value = normalizeDiagramProject(parsed);
-    } catch { /* Ignore incomplete browser storage. */ }
-  }
+  loadStoredProject();
   window.addEventListener('ace-open-planned-diagram', loadPlannedDiagram);
 });
 onUnmounted(() => {
   window.removeEventListener('ace-open-planned-diagram', loadPlannedDiagram);
   if (configTargetTimer !== undefined) window.clearTimeout(configTargetTimer);
+  if (diagnosticTargetTimer !== undefined) window.clearTimeout(diagnosticTargetTimer);
+  disposeDiagramProject();
 });
 
 function loadPlannedDiagram() {
@@ -802,13 +519,13 @@ function loadPlannedDiagram() {
   if (!saved) return;
   try {
     const parsed: unknown = JSON.parse(saved);
-    if (isDiagramProject(parsed)) project.value = normalizeDiagramProject(parsed);
+    replaceProject(parsed);
   } catch { /* Ignore invalid bridge data. */ }
 }
 
-watch(project, value => localStorage.setItem(STORAGE_KEY, JSON.stringify(value)), { deep: true });
 watch(layoutMode, value => localStorage.setItem(LAYOUT_STORAGE_KEY, value));
 watch(relationshipMode, value => localStorage.setItem(RELATIONSHIP_MODE_STORAGE_KEY, value));
+watch(showPhysicalOverlay, value => localStorage.setItem(PHYSICAL_OVERLAY_STORAGE_KEY, String(value)));
 watch(() => bbmdReport.value.devices.map(device => device.id).join('|'), () => {
   if (!bbmdReport.value.devices.some(device => device.id === focusedBbmdId.value)) focusedBbmdId.value = bbmdReport.value.devices[0]?.id ?? '';
 }, { immediate: true });
@@ -825,6 +542,13 @@ async function focusConfig(kind: ConfigTargetKind, id: string) {
   configTargetTimer = window.setTimeout(() => {
     if (activeConfigTarget.value === targetKey) activeConfigTarget.value = '';
   }, 2200);
+}
+function focusDiagnostic(diagnostic: DiagramDiagnostic) {
+  diagnosticTargetKeys.value = (diagnostic.targets ?? []).map(item => `${item.kind}-${item.id}`);
+  if (diagnosticTargetTimer !== undefined) window.clearTimeout(diagnosticTargetTimer);
+  diagnosticTargetTimer = window.setTimeout(() => { diagnosticTargetKeys.value = []; }, 2200);
+  const first = diagnostic.targets?.[0];
+  if (first) void focusConfig(first.kind, first.id);
 }
 function activateHostNode(device: DiagramDevice) {
   if (device.bbmdEnabled) focusedBbmdId.value = device.id;
@@ -901,6 +625,8 @@ async function readBbmdStateFile(event: Event) {
 }
 function importBbmdState() {
   if (!bbmdStatePreview.value?.records.length) return;
+  const hasPhysicalData = project.value.physical.locations.length || project.value.physical.patchPanels.length || project.value.physical.links.length || project.value.physical.mstpSegments.length || project.value.physical.arcnetSegments.length;
+  if (hasPhysicalData && !window.confirm('Replace this diagram? The imported BBMD state has no physical-layer data, so current locations, ports, cables, and serial wiring will be lost.')) return;
   project.value = createDiagramProjectFromAceBbmdState(bbmdStatePreview.value);
   const importedCount = bbmdStatePreview.value.records.length;
   const subnetCount = project.value.subnets.length;
@@ -1010,8 +736,10 @@ function removeSubnet(id: string) {
     if (!device.nics.length) device.nics.push(createNic(subnet.id));
   }));
   removeEndpointsFromPaths(removedEndpointIds);
+  pruneDanglingReferences(project.value);
 }
 function addDevice(subnet: DiagramSubnet) { subnet.devices.push(createDevice(subnet.devices.length + 1, subnet.id)); }
+function handleDiagramNetworkTypeChange(subnet: DiagramSubnet) { if (subnet.networkType === 'arcnet') subnet.arcnetDataRate = 156.25; }
 function removeDevice(subnet: DiagramSubnet, id: string) {
   const device = subnet.devices.find(item => item.id === id);
   const removedEndpointIds = device ? allAddresses(device).map(address => address.id) : [];
@@ -1021,6 +749,7 @@ function removeDevice(subnet: DiagramSubnet, id: string) {
     if (candidate.foreignDeviceBbmdId === id) candidate.foreignDeviceBbmdId = '';
   }));
   removeEndpointsFromPaths(removedEndpointIds);
+  pruneDanglingReferences(project.value);
 }
 function addDeviceNic(device: DiagramDevice, defaultSubnetId: string) { device.nics.push(createNic(defaultSubnetId, device.nics.length + 1)); }
 function removeDeviceNic(device: DiagramDevice, id: string) {
@@ -1028,6 +757,7 @@ function removeDeviceNic(device: DiagramDevice, id: string) {
   const nic = device.nics.find(item => item.id === id);
   if (nic) removeEndpointsFromPaths(nic.addresses.map(address => address.id));
   device.nics = device.nics.filter(item => item.id !== id);
+  pruneDanglingReferences(project.value);
 }
 function addNicAddress(nic: DiagramNic, defaultSubnetId: string) {
   nic.addresses.push(createDeviceAddress(defaultSubnetId, `Address ${nic.addresses.length + 1}`));
@@ -1036,11 +766,13 @@ function removeNicAddress(nic: DiagramNic, id: string) {
   if (nic.addresses.length <= 1) return;
   removeEndpointsFromPaths([id]);
   nic.addresses = nic.addresses.filter(address => address.id !== id);
+  pruneDanglingReferences(project.value);
 }
 function addInfrastructure() { project.value.infrastructure.push(createInfrastructure(project.value.infrastructure.length + 1)); }
 function removeInfrastructure(id: string) {
   project.value.infrastructure = project.value.infrastructure.filter(item => item.id !== id);
   project.value.paths.forEach(path => { path.hops = path.hops.filter(endpointId => endpointId !== id); });
+  pruneDanglingReferences(project.value);
 }
 function addPath() {
   const first = endpointOptions.value[0];
@@ -1188,15 +920,7 @@ function roundedTopAccentPath(width: number) {
 }
 function deviceSymbol(kind: DeviceKind) { return kind === 'controller' ? 'C' : kind === 'workstation' ? 'W' : kind === 'server' ? 'S' : kind === 'sensor' ? '•' : '?'; }
 function gridPoint(index: number, count: number, itemWidth: number, gap: number, startY: number, rowHeight: number) {
-  const columns = columnCount(count);
-  const row = Math.floor(Math.max(0, index) / columns);
-  const column = Math.max(0, index) % columns;
-  const itemsInRow = Math.min(columns, Math.max(0, count - row * columns));
-  const rowWidth = itemsInRow * itemWidth + Math.max(0, itemsInRow - 1) * gap;
-  return {
-    x: (canvasWidth.value - rowWidth) / 2 + column * (itemWidth + gap),
-    y: startY + row * rowHeight
-  };
+  return layoutGridPoint({ index, count, itemWidth, gap, startY, rowHeight, canvasWidth: canvasWidth.value, mode: layoutMode.value });
 }
 function networkX(subnet: DiagramSubnet) {
   const row = subnet.networkType === 'mstp' || subnet.networkType === 'arcnet' ? fieldSegments.value : routedNetworks.value;
@@ -1404,6 +1128,23 @@ const displayedFdrLinks = computed(() => {
   return fdrLinks.value.filter(link => link.sourceId === focusedBbmdId.value || link.targetId === focusedBbmdId.value);
 });
 
+function physicalEndpointPoint(ref: PhysicalEndpointRef): DiagramPoint | null {
+  if (ref.kind === 'infrastructure-port') {
+    const index = project.value.infrastructure.findIndex(item => item.id === ref.infrastructureId);
+    return index < 0 ? null : { x: infrastructureX(index), y: infrastructureY(index) + 72 };
+  }
+  if (ref.kind === 'device-nic') {
+    const index = hostNodes.value.findIndex(item => item.device.id === ref.deviceId);
+    const host = hostNodes.value[index];
+    return host ? { x: hostX(host, index) + hostWidth / 2, y: hostYFor(host) + hostHeight.value } : null;
+  }
+  return null;
+}
+const physicalOverlayLinks = computed(() => project.value.physical.links.flatMap(link => {
+  const a = physicalEndpointPoint(link.a); const b = physicalEndpointPoint(link.b);
+  return a && b ? [{ id: link.id, label: link.label || link.media, points: `${a.x},${a.y} ${b.x},${b.y}` }] : [];
+}));
+
 function endpointPoint(endpointId: string): DiagramPoint | null {
   const infrastructureIndex = project.value.infrastructure.findIndex(item => item.id === endpointId);
   if (infrastructureIndex >= 0) return { x: infrastructureX(infrastructureIndex), y: infrastructureY(infrastructureIndex) + 72 };
@@ -1472,6 +1213,65 @@ const pathLegends = computed(() => project.value.paths.map((path, index) => {
 
 function legendCardHeight(legend: { rows: unknown[] }) { return 37 + legend.rows.length * 19; }
 
+const logicalDiagramModel = computed(() => ({
+  project: project.value,
+  canvasWidth: canvasWidth.value,
+  canvasHeight: canvasHeight.value,
+  subnetY: subnetY.value,
+  ipHostNodes: ipHostNodes.value,
+  ipHostY: ipHostY.value,
+  fieldSegments: fieldSegments.value,
+  fieldBusY: fieldBusY.value,
+  fieldHostNodes: fieldHostNodes.value,
+  fieldHostY: fieldHostY.value,
+  showPhysicalOverlay: showPhysicalOverlay.value,
+  physicalOverlayLinks: physicalOverlayLinks.value,
+  diagnosticTargetKeys: diagnosticTargetKeys.value,
+  addressLinks: addressLinks.value,
+  scLinks: scLinks.value,
+  displayedBdtLinks: displayedBdtLinks.value,
+  displayedFdrLinks: displayedFdrLinks.value,
+  hostNodes: hostNodes.value,
+  hostHeight: hostHeight.value,
+  pathSegments: pathSegments.value,
+  pathLegends: pathLegends.value,
+  legendStart: legendStart.value,
+  legendCardWidth: legendCardWidth.value,
+  legendTextLimit: legendTextLimit.value,
+  subnetWidth,
+  subnetHeight,
+  hostWidth,
+  clipped,
+  validConnections,
+  infrastructureConnectionLabel,
+  connectionPath,
+  connectionKindClass,
+  connectionTargetX,
+  connectionTargetY,
+  infrastructureX,
+  infrastructureY,
+  focusConfig,
+  fieldBusRoutePath,
+  networkCenter,
+  networkY,
+  routerName,
+  networkX,
+  roundedTopAccentPath,
+  networkDiagramLabel,
+  subnetCidr,
+  subnetMetaLabel,
+  hostRelationshipClass,
+  hostX,
+  hostYFor,
+  activateHostNode,
+  deviceTooltip,
+  deviceServiceLabel,
+  hostAddressRows,
+  addressCount,
+  hostRelationshipBadge,
+  legendCardHeight
+}));
+
 function download(content: BlobPart, type: string, extension: string) {
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
@@ -1483,20 +1283,25 @@ function download(content: BlobPart, type: string, extension: string) {
   URL.revokeObjectURL(url);
 }
 function saveJson() { download(JSON.stringify(project.value, null, 2), 'application/json', 'json'); }
+function saveLegacyJson() { download(JSON.stringify(toLegacyDiagramProject(project.value), null, 2), 'application/json', 'v1.json'); }
+async function saveXlsx() { const { exportDiagramXlsx } = await import('../lib/export-diagram-xlsx'); await exportDiagramXlsx(project.value); }
 function diagramFilename() {
   return (project.value.title || 'network-diagram').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'network-diagram';
 }
 function serializedDiagramSvg(theme: 'dark' | 'light' = 'dark', branded = false) {
-  if (!diagramSvg.value) return;
-  const clone = diagramSvg.value.cloneNode(true) as SVGSVGElement;
-  const originalIcons = diagramSvg.value.querySelectorAll<SVGElement>('.ace-node-icon');
+  const source = project.value.viewMode === 'physical' ? physicalDiagram.value?.svg : logicalDiagram.value?.svg;
+  if (!source) return;
+  const clone = source.cloneNode(true) as SVGSVGElement;
+  const originalIcons = source.querySelectorAll<SVGElement>('.ace-node-icon');
   clone.querySelectorAll<SVGElement>('.ace-node-icon').forEach((icon, index) => {
     icon.setAttribute('fill', getComputedStyle(originalIcons[index]).color || '#c1d301');
   });
-  clone.setAttribute('width', String(canvasWidth.value));
-  clone.setAttribute('height', String(canvasHeight.value));
+  if (project.value.viewMode !== 'physical') {
+    clone.setAttribute('width', String(canvasWidth.value));
+    clone.setAttribute('height', String(canvasHeight.value));
+  }
   const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-  style.textContent = `${SVG_EXPORT_STYLES}${SVG_SC_LINK_STYLES}${SVG_BACNET_RELATIONSHIP_STYLES}${SVG_CONNECTION_STYLES}${theme === 'light' ? PDF_LIGHT_STYLES : ''}${SUBNET_ACCENT_EXPORT_STYLES}`;
+  style.textContent = `${SVG_EXPORT_STYLES}${SVG_SC_LINK_STYLES}${SVG_BACNET_RELATIONSHIP_STYLES}${SVG_CONNECTION_STYLES}${SVG_PHYSICAL_STYLES}${theme === 'light' ? PDF_LIGHT_STYLES : ''}${SUBNET_ACCENT_EXPORT_STYLES}`;
   clone.prepend(style);
   if (branded) {
     const appLogo = document.querySelector<SVGSVGElement>('.logo-icon-svg');
@@ -1542,19 +1347,21 @@ async function savePdf() {
       image.onerror = () => reject(new Error('Unable to render diagram SVG'));
       image.src = svgUrl;
     });
-    const renderScale = Math.min(2, 8192 / Math.max(canvasWidth.value, canvasHeight.value));
+    const exportWidth = image.naturalWidth || canvasWidth.value;
+    const exportHeight = image.naturalHeight || canvasHeight.value;
+    const renderScale = Math.min(2, 8192 / Math.max(exportWidth, exportHeight));
     const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(canvasWidth.value * renderScale));
-    canvas.height = Math.max(1, Math.round(canvasHeight.value * renderScale));
+    canvas.width = Math.max(1, Math.round(exportWidth * renderScale));
+    canvas.height = Math.max(1, Math.round(exportHeight * renderScale));
     const context = canvas.getContext('2d');
     if (!context) throw new Error('PDF canvas is unavailable');
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
     const { jsPDF } = await import('jspdf');
     const padding = 24;
-    const pointScale = Math.min(0.75, (14_400 - padding * 2) / Math.max(canvasWidth.value, canvasHeight.value));
-    const drawingWidth = canvasWidth.value * pointScale;
-    const drawingHeight = canvasHeight.value * pointScale;
+    const pointScale = Math.min(0.75, (14_400 - padding * 2) / Math.max(exportWidth, exportHeight));
+    const drawingWidth = exportWidth * pointScale;
+    const drawingHeight = exportHeight * pointScale;
     const pageWidth = drawingWidth + padding * 2;
     const pageHeight = drawingHeight + padding * 2;
     const pdf = new jsPDF({
@@ -1569,7 +1376,7 @@ async function savePdf() {
     pdf.addImage(canvas.toDataURL('image/png'), 'PNG', padding, padding, drawingWidth, drawingHeight, undefined, 'FAST');
     pdf.link(
       padding + 38 * pointScale,
-      padding + (canvasHeight.value - 36) * pointScale,
+      padding + (exportHeight - 36) * pointScale,
       Math.min(360 * pointScale, drawingWidth - 38 * pointScale),
       20 * pointScale,
       { url: TOOL_URL }
@@ -1580,6 +1387,10 @@ async function savePdf() {
         theme: pdfTheme.value
       });
     }
+    if (includeCableScheduleInPdf.value || includeSerialTablesInPdf.value) appendPhysicalSchedulePages(pdf, project.value, {
+      projectTitle: project.value.title || 'Untitled BACnet Network', theme: pdfTheme.value,
+      includeCables: includeCableScheduleInPdf.value, includeSerial: includeSerialTablesInPdf.value
+    });
     pdf.save(`${diagramFilename()}.pdf`);
   } catch (error) {
     console.error(error);
@@ -1595,8 +1406,7 @@ async function openJson(event: Event) {
   if (!file) return;
   try {
     const parsed: unknown = JSON.parse(await file.text());
-    if (!isDiagramProject(parsed)) throw new Error('Unsupported diagram file');
-    project.value = normalizeDiagramProject(parsed);
+    project.value = migrateDiagramProject(parsed);
   } catch {
     window.alert('That file is not a valid BACnet Studio diagram project.');
   } finally {

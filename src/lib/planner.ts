@@ -1,4 +1,17 @@
 import { getSubnetDetails, ipToLong, longToIp } from './subnet';
+import type { MstpCable } from './physical';
+
+export interface PlannerPhysicalHints {
+  closetName?: string;
+  switchCount?: number;
+  portsPerSwitch?: number;
+  poeDevices?: number;
+  mstpSegments?: number;
+  mstpSegmentLengthMeters?: number;
+  arcnetSegments?: number;
+  arcnetSegmentLengthMeters?: number;
+  cable?: MstpCable;
+}
 
 export interface PlannerSubnet {
   id: string;
@@ -34,6 +47,7 @@ export interface PlannerSubnet {
   scFailoverHubIp?: string;
   scFailoverHubUri?: string;
   scUnderlaySubnetIds?: string[];
+  physical?: PlannerPhysicalHints;
 }
 
 export function isIpNetwork(subnet: PlannerSubnet): boolean {
@@ -50,18 +64,19 @@ export interface PlannerState {
 }
 
 export interface PlannerProject extends PlannerState {
-  version: 1;
+  version: 2;
   kind: 'ace-bacnet-network-plan';
 }
 
 export function createPlannerProject(subnets: PlannerSubnet[], splitHorizon: boolean): PlannerProject {
-  return { version: 1, kind: 'ace-bacnet-network-plan', splitHorizon, subnets };
+  return { version: 2, kind: 'ace-bacnet-network-plan', splitHorizon, subnets };
 }
 
 export function isPlannerProject(value: unknown): value is PlannerProject {
   if (!value || typeof value !== 'object') return false;
   const project = value as Partial<PlannerProject>;
-  if (project.version !== 1 || project.kind !== 'ace-bacnet-network-plan' || typeof project.splitHorizon !== 'boolean' || !Array.isArray(project.subnets)) return false;
+  const version = (value as { version?: unknown }).version;
+  if ((version !== 1 && version !== 2) || project.kind !== 'ace-bacnet-network-plan' || typeof project.splitHorizon !== 'boolean' || !Array.isArray(project.subnets)) return false;
 
   return project.subnets.every(subnet => {
     if (!subnet || typeof subnet !== 'object') return false;

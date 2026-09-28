@@ -910,6 +910,8 @@
       <aside class="standards-note"><strong>Standards and design basis</strong><span>Annex J permits a configured UDP port other than 47808. BACnet Committee routing guidance shows a router directly connected to multiple B/IP networks using a UDP port unique to each network.</span><a href="https://bacnet.org/wp-content/uploads/sites/4/2022/06/Building-Wide-Area-Networks-With-BACnet-Part-2.pdf" target="_blank" rel="noreferrer">BACnet/IP default and configurable port</a><a href="https://bacnet.org/wp-content/uploads/sites/4/2022/06/BACnet_IP-21-Routing.pdf" target="_blank" rel="noreferrer">Routing between B/IP networks</a></aside>
     </div>
 
+    <PhysicalLayerSection />
+
   </div>
 </template>
 
@@ -921,6 +923,7 @@ import AceToggle from './AceToggle.vue';
 import AceSvgNetworkNode from './AceSvgNetworkNode.vue';
 import GlossaryLink from './GlossaryLink.vue';
 import PrimerScenarioIntro from './PrimerScenarioIntro.vue';
+import PhysicalLayerSection from './primer/PhysicalLayerSection.vue';
 import { ipToLong, longToIp, getSubnetDetails, cidrToMask, toBinaryString } from '../lib/subnet';
 
 const activeOsiTab = ref('ip-local-uc');

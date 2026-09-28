@@ -204,9 +204,9 @@ export const glossaryEntries: GlossaryEntry[] = [
     id: 'arcnet',
     term: 'ARCNET',
     category: 'BACnet networking',
-    definition: 'A token-passing network technology supported as a BACnet datalink. It appears in some installed building-control systems but is less common in new work.',
-    aliases: ['BACnet ARCNET'],
-    related: ['datalink', 'bacnet-router']
+    definition: 'A token-passing network technology supported as a BACnet datalink. Automated Logic systems commonly use the 156.25 kbps ARC156 variant over shielded EIA-485 wiring.',
+    aliases: ['BACnet ARCNET', 'ARC156', 'ALC ARCNET'],
+    related: ['datalink', 'bacnet-router', 'arc156']
   },
   {
     id: 'bbmd',
@@ -368,6 +368,60 @@ export const glossaryEntries: GlossaryEntry[] = [
     category: 'Messages & data',
     definition: 'The 16-level command structure used by commandable BACnet properties. The highest active priority determines the effective value; relinquishing a command clears that slot.',
     related: ['writeproperty', 'property']
+  },
+  {
+    id: 'eia-485', term: 'EIA-485 / RS-485', category: 'BACnet networking', definition: 'A balanced differential serial electrical interface used by BACnet MS/TP and ALC ARC156. The bus normally uses shielded twisted pair in a daisy chain with controlled termination, bias, polarity, length, and unit load.', aliases: ['RS-485', 'EIA-485'], related: ['mstp', 'arcnet', 'termination', 'network-bias']
+  },
+  {
+    id: 'termination', term: 'Bus termination', category: 'BACnet networking', definition: 'An impedance-matching network placed at both physical ends of an EIA-485 segment to reduce signal reflections. A terminator belongs at an end, not merely at the first or last logical address.', aliases: ['terminator'], related: ['eia-485', 'mstp-segment', 'repeater']
+  },
+  {
+    id: 'network-bias', term: 'Network bias', category: 'BACnet networking', definition: 'A controlled idle-state voltage applied to an EIA-485 segment so receivers see a known state when no transmitter is active. Competing or missing bias sources can cause unreliable communication.', aliases: ['failsafe bias'], related: ['eia-485', 'termination']
+  },
+  {
+    id: 'mstp-segment', term: 'MS/TP segment', category: 'BACnet networking', definition: 'One continuous EIA-485 bus between repeaters or routers, with an ordered set of nodes, two physical ends, a cable-length budget, and a unit-load limit.', related: ['mstp', 'eia-485', 'repeater']
+  },
+  {
+    id: 'arc156', term: 'BACnet ARC156', category: 'BACnet networking', definition: 'Automated Logic and Carrier’s 156.25 kbps BACnet ARCNET implementation over shielded EIA-485 wiring. Product guides specify daisy-chain wiring and commonly limit one segment to 610 metres (2000 feet) or 32 nodes.', aliases: ['ARC156', 'ALC ARCNET'], related: ['arcnet', 'eia-485', 'repeater']
+  },
+  {
+    id: 'repeater', term: 'Repeater', category: 'BACnet networking', definition: 'A physical-layer device that regenerates a signal and divides wiring into separate electrical segments. It does not perform BACnet network-layer routing.', related: ['eia-485', 'mstp-segment', 'bacnet-router']
+  },
+  {
+    id: 'access-port', term: 'Access port', category: 'IP networking', definition: 'An Ethernet switch port that places ordinary untagged endpoint traffic into one configured VLAN.', related: ['vlan', 'trunk-port', '802-1q']
+  },
+  {
+    id: 'trunk-port', term: 'Trunk port', category: 'IP networking', definition: 'An Ethernet switch link configured to carry multiple VLANs, normally by adding IEEE 802.1Q tags. Both ends must agree on allowed and native VLAN behavior.', related: ['vlan', 'access-port', 'native-vlan', '802-1q']
+  },
+  {
+    id: 'native-vlan', term: 'Native VLAN', category: 'IP networking', definition: 'The VLAN associated with untagged frames on an 802.1Q trunk. A mismatch between trunk ends can silently place the same untagged traffic into different broadcast domains.', related: ['trunk-port', 'vlan', '802-1q']
+  },
+  {
+    id: '802-1q', term: 'IEEE 802.1Q', category: 'IP networking', definition: 'The Ethernet standard that inserts VLAN identification into frames so one physical link can carry traffic for multiple logical broadcast domains.', aliases: ['dot1q', 'VLAN tagging'], related: ['vlan', 'trunk-port']
+  },
+  {
+    id: 'poe', term: 'Power over Ethernet', abbreviation: 'PoE', category: 'IP networking', definition: 'IEEE 802.3 technology that supplies power and Ethernet data over structured copper cabling. Port class, device demand, and the switch’s aggregate power budget must all be compatible.', aliases: ['802.3af', '802.3at', '802.3bt', 'PoE+', 'PoE++'], related: ['access-port']
+  },
+  {
+    id: 'patch-panel', term: 'Patch panel', category: 'System delivery', definition: 'A passive termination field that maps permanent building cabling to removable patch cords. Its front/rear port pairing is part of the end-to-end physical path.', related: ['mdf-idf', 'access-port']
+  },
+  {
+    id: 'mdf-idf', term: 'MDF / IDF', category: 'System delivery', definition: 'Main and intermediate distribution frames: rooms or closets where network switches, patch panels, backbone fibers, and horizontal cabling are concentrated.', aliases: ['MDF', 'IDF', 'telecom closet'], related: ['patch-panel', 'sfp']
+  },
+  {
+    id: 'sfp', term: 'Small Form-factor Pluggable', abbreviation: 'SFP', category: 'IP networking', definition: 'A removable transceiver module that gives a network port a particular optical or copper medium, connector, wavelength, and reach.', related: ['multimode-fiber', 'single-mode-fiber', 'media-converter']
+  },
+  {
+    id: 'multimode-fiber', term: 'Multimode fiber', category: 'IP networking', definition: 'Optical fiber with a larger core that supports multiple light paths, commonly used for shorter building and campus links. Reach depends on fiber grade and Ethernet speed.', aliases: ['MMF', 'OM3', 'OM4'], related: ['single-mode-fiber', 'sfp']
+  },
+  {
+    id: 'single-mode-fiber', term: 'Single-mode fiber', category: 'IP networking', definition: 'Optical fiber with a small core designed for one propagation mode, supporting longer links when paired with matching optics.', aliases: ['SMF', 'OS2'], related: ['multimode-fiber', 'sfp']
+  },
+  {
+    id: 'media-converter', term: 'Media converter', category: 'IP networking', definition: 'A device that converts a physical signal between media, such as copper Ethernet and fiber, without necessarily performing IP or BACnet routing.', related: ['sfp', 'repeater']
+  },
+  {
+    id: 'unit-load', term: 'Unit load', category: 'BACnet networking', definition: 'The standardized electrical loading a transceiver places on an EIA-485 bus. Modern fractional-unit-load devices may permit more physical transceivers, subject to the applicable device and installation guidance.', related: ['eia-485', 'mstp-segment']
   }
 ];
 

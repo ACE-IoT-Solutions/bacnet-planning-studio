@@ -15,6 +15,7 @@ This is designed for control engineers, network integrators, and building automa
   - **Isolated Subnets:** Standard routed separation requiring BBMD configuration.
 - **Live Network Simulator:** Send simulated Who-Is (Broadcast) and ReadProperty (Unicast) packets and trace their paths across switches, routers, and BBMD tunnels in real-time.
 - **Network Diagram Builder:** Document any number of subnets, devices with multiple NICs and multiple addresses per NIC, routers, switches, firewalls, and gateways in a live topology. Jump from any diagram node to its configuration card, move configured devices between compatible subnets, switch between compact, balanced, and wide layouts, inspect large BBMD estates with peer highlights or focused edges, model mutual and one-way BDT peers, show foreign-device registrations, draw ordered connectivity tests, surface address warnings, and export shareable SVG, PDF, or editable JSON files. PDF exports can include a paginated peering summary and per-device BDT tables.
+- **Physical Layer Modeling:** Organize equipment by campus/building/closet/rack, generate switch and patch-panel ports, record copper/fiber/wireless cable schedules, validate VLAN and PoE configuration, and render a dedicated physical topology. Ordered BACnet MS/TP and Automated Logic ARC156 buses include termination, bias, unit-load, node-count, and length checks. Physical schedules export to XLSX; legacy v1 JSON export remains available.
 - **Diagram Getting-Started Guide:** Follow an in-app workflow for manual diagrams, ACE BBMD Manager state capture/import, and authorized Nmap host discovery.
 - **Nmap Inventory Import:** Paste standard Nmap host-discovery output, choose the scanned network prefix, preview responsive hosts, and merge deduplicated IP-only devices and named gateway infrastructure into the diagram.
 - **ACE BBMD Manager Import:** Upload a `.state` store to create device-level BBMDs and observed BDT links. Because the state store omits subnet definitions, imported networks begin as reviewable `/24` assumptions.
@@ -31,6 +32,7 @@ This is designed for control engineers, network integrators, and building automa
 - **Core:** Vue 3, TypeScript, and modern ESM modules
 - **Styling:** Custom responsive CSS3 with glassmorphism effects and modern typography
 - **Graphics:** Dynamic animated vector SVGs for all diagram elements
+- **Project schema:** Version 2 with automatic migration of diagram and planner v1 files; see `docs/schema/diagram-project-v2.md`
 - **Local Dev Server:** Vite (optional, zero-config)
 
 ## Getting Started

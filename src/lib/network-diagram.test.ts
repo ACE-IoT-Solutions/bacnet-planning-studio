@@ -7,7 +7,7 @@ import {
 describe('network diagram validation', () => {
   it('creates an empty project without starter topology', () => {
     expect(createEmptyProject()).toMatchObject({
-      version: 1,
+      version: 2,
       title: 'Untitled BACnet Network',
       subnets: [],
       infrastructure: [],
@@ -213,6 +213,21 @@ describe('network diagram validation', () => {
     expect(diagram.subnets[0].devices[0].requiredForRouting).toBe(true);
     expect(diagram.subnets[1].routerId).toBe(diagram.subnets[0].devices[0].id);
     expect(getDiagramDiagnostics(diagram)).toEqual([]);
+  });
+
+  it('turns planner physical hints into switches, locations, MS/TP, and ALC ARC156 segments', () => {
+    const base = { gatewayOffset: 1, vlan: 10, port: 47808, bbmdEnabled: false, bbmdOffset: 10, bmsPlaced: false, bmsRole: 'none' as const, fdrTargetSubnetId: '' };
+    const diagram = createDiagramProjectFromPlan([
+      { ...base, id: 'ip', name: 'IP LAN', ip: '192.168.10.0', cidr: 24, networkType: 'bacnet-ip', physical: { closetName: 'IDF 1', switchCount: 1, portsPerSwitch: 24 } },
+      { ...base, id: 'mstp', name: 'VAV', ip: '', cidr: 24, networkType: 'mstp', bacnetNetworkNumber: 2001, upstreamIpSubnetId: 'ip', routerName: 'Router', routerIp: '192.168.10.20', physical: { closetName: 'IDF 1', mstpSegments: 2, mstpSegmentLengthMeters: 400 } },
+      { ...base, id: 'arc', name: 'ALC ARC156', ip: '', cidr: 24, networkType: 'arcnet', bacnetNetworkNumber: 2002, upstreamIpSubnetId: 'ip', routerName: 'Router', routerIp: '192.168.10.20', physical: { closetName: 'IDF 1', arcnetSegments: 1, arcnetSegmentLengthMeters: 500, cable: 'stp-22awg' } }
+    ]);
+    expect(diagram.viewMode).toBe('physical');
+    expect(diagram.physical.locations.map(item => item.name)).toEqual(['IDF 1']);
+    expect(diagram.infrastructure.find(item => item.kind === 'switch')?.ports).toHaveLength(25);
+    expect(diagram.physical.mstpSegments).toHaveLength(2);
+    expect(diagram.physical.arcnetSegments).toHaveLength(1);
+    expect(diagram.physical.arcnetSegments[0]).toMatchObject({ lengthMeters: 500, cable: 'stp-22awg' });
   });
 
   it('imports planned core routing, BBMDs, and the BMS into the topology', () => {

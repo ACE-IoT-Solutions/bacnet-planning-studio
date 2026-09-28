@@ -226,7 +226,7 @@
                 <div class="form-group" style="margin:0;"><label>Max Master</label><input v-model.number="sub.mstpMaxMaster" type="number" min="0" max="127"><span style="font-size:.72rem;color:var(--text-muted)">Valid master MAC range: 0–{{ sub.mstpMaxMaster }}</span></div>
               </div>
               <div v-else style="display:flex; flex-direction:column; gap:0.75rem;">
-                <div class="form-group" style="margin:0;"><label>Data rate</label><select v-model.number="sub.arcnetDataRate"><option :value="156">156.25 kbps</option><option :value="2500">2.5 Mbps</option><option :value="5000">5 Mbps</option><option :value="10000">10 Mbps</option></select></div>
+                <div class="form-group" style="margin:0;"><label>Data rate</label><select v-model.number="sub.arcnetDataRate"><option :value="156.25">156.25 kbps</option><option :value="2500">2.5 Mbps</option><option :value="5000">5 Mbps</option><option :value="10000">10 Mbps</option></select></div>
                 <span style="font-size:.78rem;color:var(--text-muted)">ARCNET node addresses are entered as 0–255 in the diagram tool.</span>
               </div>
               <div style="display:flex; flex-direction:column; gap:0.75rem;">
@@ -234,6 +234,26 @@
                 <div class="form-group" style="margin:0;"><label>Routing device address on upstream</label><input v-model="sub.routerIp" type="text" :placeholder="routerAddressPlaceholder(sub)"></div>
               </div>
             </div>
+            <details class="planner-physical-hints">
+              <summary>Physical planning</summary>
+              <div class="planner-physical-grid">
+                <div class="form-group"><label>Closet / IDF</label><input v-model="physicalHints(sub).closetName" placeholder="IDF 1"></div>
+                <template v-if="isIpNetwork(sub)">
+                  <div class="form-group"><label>Switch count</label><input v-model.number="physicalHints(sub).switchCount" type="number" min="0"></div>
+                  <div class="form-group"><label>Ports per switch</label><input v-model.number="physicalHints(sub).portsPerSwitch" type="number" min="1"></div>
+                  <div class="form-group"><label>PoE devices</label><input v-model.number="physicalHints(sub).poeDevices" type="number" min="0"></div>
+                  <span class="physical-budget-hint">{{ physicalPortBudget(sub) }} ports · {{ Math.max(0, physicalPortBudget(sub) - (sub.plannedDevices ?? 0)) }} spare</span>
+                </template>
+                <template v-else>
+                  <div v-if="sub.networkType === 'arcnet'" class="form-group"><label>ARC156 segments</label><input v-model.number="physicalHints(sub).arcnetSegments" type="number" min="0"></div>
+                  <div v-else class="form-group"><label>MS/TP segments</label><input v-model.number="physicalHints(sub).mstpSegments" type="number" min="0"></div>
+                  <div v-if="sub.networkType === 'arcnet'" class="form-group"><label>Estimated length / segment (m)</label><input v-model.number="physicalHints(sub).arcnetSegmentLengthMeters" type="number" min="0"></div>
+                  <div v-else class="form-group"><label>Estimated length / segment (m)</label><input v-model.number="physicalHints(sub).mstpSegmentLengthMeters" type="number" min="0"></div>
+                  <div class="form-group"><label>Cable</label><select v-model="physicalHints(sub).cable"><option value="stp-18awg">18 AWG STP</option><option value="stp-22awg">22 AWG STP</option><option value="stp-24awg">24 AWG STP</option><option value="other">Other</option></select></div>
+                  <span class="physical-budget-hint">{{ Math.max(1, Math.ceil((sub.plannedDevices ?? 0) / 32)) }} segments recommended for {{ sub.plannedDevices ?? 0 }} nodes</span>
+                </template>
+              </div>
+            </details>
           </div>
           <div v-if="subnets.length === 0" style="text-align: center; color: var(--text-muted); padding: 2rem; background: rgba(255,255,255,0.02); border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
             No networks added. Click "Add Network" to start designing.
@@ -395,9 +415,13 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, inject, type Ref } from 'vue';
 import { getSubnetDetails, getOffsetIp, ipToLong, longToIp } from '../lib/subnet';
-import { calculateAutoSizeCidr, findNextAvailableSubnetBlock, classifyOverlap, createPlannerProject, getBmsHostOffset, isIpNetwork, isPlannerProject, type PlannerSubnet } from '../lib/planner';
+import { calculateAutoSizeCidr, findNextAvailableSubnetBlock, classifyOverlap, createPlannerProject, getBmsHostOffset, isIpNetwork, type PlannerSubnet } from '../lib/planner';
 import { exportPlannerXlsx } from '../lib/export-xlsx';
 import { createDiagramProjectFromPlan } from '../lib/network-diagram';
+import { migratePlannerProject } from '../lib/schema-migrations';
+import { DIAGRAM_STORAGE_KEY, PLANNER_SPLIT_HORIZON_STORAGE_KEY, PLANNER_SUBNETS_STORAGE_KEY } from '../lib/storage-keys';
+import { ARC156_MAX_LENGTH_METERS, mstpLengthLimit } from '../lib/physical-limits';
+import { handoffPlannerDiagram } from '../composables/usePlannerDiagramHandoff';
 import AppButton from './AppButton.vue';
 import AceCheckbox from './AceCheckbox.vue';
 import GlossaryLink from './GlossaryLink.vue';
@@ -471,6 +495,7 @@ const normalizeNetwork = (sub: PlannerSubnet) => Object.assign(sub, {
   bmsUsesBacnetIp: sub.bmsUsesBacnetIp ?? true, bmsUsesBacnetSc: sub.bmsUsesBacnetSc ?? false,
   scEnabled: sub.scEnabled ?? sub.networkType === 'bacnet-sc', scPrimaryHubName: sub.scPrimaryHubName ?? '', scPrimaryHubIp: sub.scPrimaryHubIp ?? '', scPrimaryHubUri: sub.scPrimaryHubUri ?? '',
   scFailoverEnabled: sub.scFailoverEnabled ?? false, scFailoverHubName: sub.scFailoverHubName ?? '', scFailoverHubIp: sub.scFailoverHubIp ?? '',
+  physical: sub.physical ?? {},
   scFailoverHubUri: sub.scFailoverHubUri ?? '', scUnderlaySubnetIds: sub.scUnderlaySubnetIds ?? []
 });
 const migrateLegacyScNetworks = (networks: PlannerSubnet[]) => {
@@ -508,8 +533,8 @@ const wizardError = ref('');
 
 // Load from localStorage if available
 onMounted(() => {
-  const savedSubnets = localStorage.getItem('bacnet_planner_subnets');
-  const savedSplitHorizon = localStorage.getItem('bacnet_planner_split_horizon');
+  const savedSubnets = localStorage.getItem(PLANNER_SUBNETS_STORAGE_KEY);
+  const savedSplitHorizon = localStorage.getItem(PLANNER_SPLIT_HORIZON_STORAGE_KEY);
 
   if (savedSubnets) {
     try {
@@ -526,11 +551,11 @@ onMounted(() => {
 
 // Watch and save to localStorage
 watch(subnets, (newVal) => {
-  localStorage.setItem('bacnet_planner_subnets', JSON.stringify(newVal));
+  localStorage.setItem(PLANNER_SUBNETS_STORAGE_KEY, JSON.stringify(newVal));
 }, { deep: true });
 
 watch(splitHorizon, (newVal) => {
-  localStorage.setItem('bacnet_planner_split_horizon', newVal.toString());
+  localStorage.setItem(PLANNER_SPLIT_HORIZON_STORAGE_KEY, newVal.toString());
 });
 
 const cidrOptions = Array.from({ length: 15 }, (_, i) => 16 + i); // /16 to /30
@@ -562,7 +587,7 @@ const addNetwork = (networkType: 'bacnet-ip' | 'bacnet-sc' | 'mstp' | 'arcnet') 
     bmsUsesBacnetIp: true, bmsUsesBacnetSc: false,
     fdrTargetSubnetId: '',
     plannedDevices: 0,
-    routeTargets: [], networkType, bacnetNetworkNumber: networkType === 'bacnet-ip' ? '' : 2000 + serialCount + 1, mstpBaudRate: 38400, mstpMaxMaster: 127, arcnetDataRate: 2500,
+    routeTargets: [], networkType, bacnetNetworkNumber: networkType === 'bacnet-ip' ? '' : 2000 + serialCount + 1, mstpBaudRate: 38400, mstpMaxMaster: 127, arcnetDataRate: networkType === 'arcnet' ? 156.25 : 2500,
     upstreamIpSubnetId: networkType === 'mstp' || networkType === 'arcnet' ? upstream?.id || '' : '', routerName: '', routerIp: '',
     scEnabled: false, scPrimaryHubName: '', scPrimaryHubIp: '', scPrimaryHubUri: '', scFailoverEnabled: false,
     scFailoverHubName: '', scFailoverHubIp: '', scFailoverHubUri: '', scUnderlaySubnetIds: networkType === 'bacnet-sc' && upstream ? [upstream.id] : []
@@ -573,8 +598,11 @@ const handleNetworkTypeChange = (sub: PlannerSubnet) => {
   if (sub.networkType === 'mstp' || sub.networkType === 'arcnet') {
     sub.bbmdEnabled = false; sub.bmsPlaced = false; sub.bmsRole = 'none';
     sub.upstreamIpSubnetId ||= ipSubnets.value.find(item => item.id !== sub.id)?.id || '';
+    if (sub.networkType === 'arcnet') sub.arcnetDataRate = 156.25;
   }
 };
+const physicalHints = (sub: PlannerSubnet) => (sub.physical ??= {});
+const physicalPortBudget = (sub: PlannerSubnet) => (sub.physical?.switchCount ?? 0) * (sub.physical?.portsPerSwitch ?? 0);
 
 const deleteSubnet = (id: string) => {
   subnets.value = subnets.value.filter(s => s.id !== id);
@@ -730,6 +758,11 @@ const validationAlerts = computed<ValidationAlert[]>(() => {
       if (!routerAddressValid(s1, upstream)) alerts.push({ type: 'error', text: `Field bus "${s1.name}" needs a valid routing-device address on its upstream network.` });
       if (s1.networkType === 'mstp' && (s1.plannedDevices || 0) > (s1.mstpMaxMaster ?? 127) + 1) alerts.push({ type: 'error', text: `MS/TP network "${s1.name}" has more planned devices than its Max Master setting permits.` });
       if (s1.networkType === 'arcnet' && (s1.plannedDevices || 0) > 256) alerts.push({ type: 'error', text: `ARCNET network "${s1.name}" exceeds the 256-node address space.` });
+      const plannedSegments = s1.networkType === 'arcnet' ? s1.physical?.arcnetSegments : s1.physical?.mstpSegments;
+      if (plannedSegments !== undefined && plannedSegments * 32 < (s1.plannedDevices ?? 0)) alerts.push({ type: 'warning', text: `${s1.name} needs at least ${Math.ceil((s1.plannedDevices ?? 0) / 32)} physical segments for its planned node count.` });
+      const plannedLength = s1.networkType === 'arcnet' ? s1.physical?.arcnetSegmentLengthMeters : s1.physical?.mstpSegmentLengthMeters;
+      const lengthLimit = s1.networkType === 'arcnet' ? ARC156_MAX_LENGTH_METERS : mstpLengthLimit(s1.physical?.cable ?? 'stp-18awg', s1.mstpBaudRate ?? 38400);
+      if ((plannedLength ?? 0) > lengthLimit) alerts.push({ type: 'warning', text: `${s1.name} estimates ${plannedLength} m per segment, above the ${lengthLimit} m modeled limit.` });
       continue;
     }
     const details1 = getSubnetDetails(s1.ip, s1.cidr);
@@ -742,6 +775,7 @@ const validationAlerts = computed<ValidationAlert[]>(() => {
     }
     if (s1.bmsPlaced && s1.bmsUsesBacnetSc && !s1.scEnabled) alerts.push({ type: 'error', text: `BMS on "${s1.name}" uses BACnet/SC but no SC hub infrastructure is configured on that IP network.` });
     if (s1.bmsPlaced && !s1.bmsUsesBacnetIp && !s1.bmsUsesBacnetSc) alerts.push({ type: 'warning', text: `BMS on "${s1.name}" has no BACnet service selected.` });
+    if (s1.physical && physicalPortBudget(s1) < (s1.plannedDevices ?? 0)) alerts.push({ type: 'warning', text: `${s1.name} plans ${s1.plannedDevices ?? 0} devices but only ${physicalPortBudget(s1)} switch ports.` });
 
     // Capacity warning (> 500 usable IPs)
     if (details1.numHosts > 500) {
@@ -885,7 +919,7 @@ const sheetStructureData = computed(() => {
 
 // Trigger Excel download
 const exportXlsx = () => {
-  exportPlannerXlsx(subnets.value, splitHorizon.value);
+  exportPlannerXlsx(createPlannerProject(subnets.value, splitHorizon.value));
 };
 const savePlannerProject = () => {
   const project = createPlannerProject(subnets.value, splitHorizon.value);
@@ -906,9 +940,9 @@ const loadPlannerProject = async (event: Event) => {
   if (!file) return;
   try {
     const parsed: unknown = JSON.parse(await file.text());
-    if (!isPlannerProject(parsed)) throw new Error('Unsupported planner file');
-    subnets.value = migrateLegacyScNetworks(parsed.subnets.map(subnet => normalizeNetwork({ ...subnet })));
-    splitHorizon.value = parsed.splitHorizon;
+    const migrated = migratePlannerProject(parsed);
+    subnets.value = migrateLegacyScNetworks(migrated.subnets.map(subnet => normalizeNetwork({ ...subnet })));
+    splitHorizon.value = migrated.splitHorizon;
     plannerFileNotice.value = `Loaded ${subnets.value.length} planned ${subnets.value.length === 1 ? 'network' : 'networks'} from ${file.name}.`;
   } catch {
     window.alert('That file is not a valid BACnet Studio network plan.');
@@ -917,7 +951,7 @@ const loadPlannerProject = async (event: Event) => {
   }
 };
 const visualizePlan = () => {
-  localStorage.setItem('aceiot-network-diagram-v1', JSON.stringify(createDiagramProjectFromPlan(subnets.value, splitHorizon.value)));
+  if (!handoffPlannerDiagram(createDiagramProjectFromPlan(subnets.value, splitHorizon.value))) return;
   window.dispatchEvent(new CustomEvent('ace-open-planned-diagram'));
 };
 </script>

@@ -1,0 +1,1 @@
+{"version":1,"kind":"ace-bacnet-network-plan","splitHorizon":false,"subnets":[{"id":"wizard-1","name":"Building Subnet 1","ip":"192.168.1.0","cidr":24,"gatewayOffset":1,"vlan":10,"port":47808,"bbmdEnabled":false,"bbmdOffset":10,"bmsPlaced":false,"bmsRole":"none","fdrTargetSubnetId":""}]}

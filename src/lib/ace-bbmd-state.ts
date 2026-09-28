@@ -1,4 +1,5 @@
 import { createDevice, createSubnet, type DiagramProject } from './network-diagram';
+import { createEmptyPhysicalLayer } from './physical';
 import { ipToLong, longToIp } from './subnet';
 
 export interface AceBbmdEndpoint {
@@ -138,12 +139,13 @@ export function createDiagramProjectFromAceBbmdState(parsed: AceBbmdStateImport)
   }
 
   return {
-    version: 1,
+    version: 2,
     title: 'Imported ACE BBMD Topology',
     notes: `Imported from ACE BBMD Manager state store. All ${subnetByNetwork.size} inferred networks default to /24; review and correct subnet definitions where needed.`,
     subnets: [...subnetByNetwork.values()],
     infrastructure: [],
     paths: [],
-    viewMode: 'networks'
+    viewMode: 'networks',
+    physical: createEmptyPhysicalLayer()
   };
 }
