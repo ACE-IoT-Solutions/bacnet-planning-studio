@@ -117,7 +117,7 @@
                 </g>
               </g>
             </g>
-            <text class="footer-label export-footer" x="40" :y="m.canvasHeight - 22">BACnet Studio by ACE IoT · https://ace-iot-solutions.github.io/bacnet-subnetting-primer/</text>
+            <text class="footer-label export-footer" x="40" :y="m.canvasHeight - 22">BACnet Studio by ACE IoT · https://ace-iot-solutions.github.io/bacnet-planning-studio/</text>
           </svg>
 </template>
 

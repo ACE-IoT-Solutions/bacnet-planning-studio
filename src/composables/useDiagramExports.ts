@@ -14,7 +14,7 @@ import {
 import type { DiagramProject } from '../lib/network-diagram';
 import { migrateDiagramProject, toLegacyDiagramProject } from '../lib/schema-migrations';
 
-const TOOL_URL = 'https://ace-iot-solutions.github.io/bacnet-subnetting-primer/';
+const TOOL_URL = 'https://ace-iot-solutions.github.io/bacnet-planning-studio/';
 
 interface SvgHandle {
   svg: SVGSVGElement | null;

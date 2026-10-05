@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://ace-iot-solutions.github.io/bacnet-subnetting-primer/schemas/planner-project-v2.schema.json",
+  "$id": "https://ace-iot-solutions.github.io/bacnet-planning-studio/schemas/planner-project-v2.schema.json",
   "title": "BACnet Studio planner project v2",
   "description": "A BACnet network plan used by the Network Planner and diagram handoff.",
   "type": "object",

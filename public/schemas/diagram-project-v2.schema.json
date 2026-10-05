@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://ace-iot-solutions.github.io/bacnet-subnetting-primer/schemas/diagram-project-v2.schema.json",
+  "$id": "https://ace-iot-solutions.github.io/bacnet-planning-studio/schemas/diagram-project-v2.schema.json",
   "title": "BACnet Studio diagram project v2",
   "description": "A logical BACnet topology with optional physical locations, ports, links, and serial buses.",
   "type": "object",

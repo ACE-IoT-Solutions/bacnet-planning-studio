@@ -3,7 +3,7 @@
   "name": "BACnet Studio by ACE IoT",
   "version": "1.2.0",
   "description": "Client-side tools for planning, diagramming, calculating, validating, and troubleshooting BACnet networks.",
-  "canonicalUrl": "https://ace-iot-solutions.github.io/bacnet-subnetting-primer/",
+  "canonicalUrl": "https://ace-iot-solutions.github.io/bacnet-planning-studio/",
   "runtime": {
     "kind": "static-client-side-web-application",
     "requiresJavaScript": true,

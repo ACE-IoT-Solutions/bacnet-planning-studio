@@ -4,6 +4,9 @@ An interactive workspace for planning, diagramming, validating, and troubleshoot
 
 This is designed for control engineers, network integrators, and building automation specialists who need to configure and troubleshoot communications on modern building automation networks.
 
+- **Live application:** https://ace-iot-solutions.github.io/bacnet-planning-studio/
+- **Repository:** https://github.com/ACE-IoT-Solutions/bacnet-planning-studio
+
 ## Features
 
 - **Interactive Subnet Calculator:** Compute Network ID, Broadcast IP, usable range, and host count for two devices simultaneously.

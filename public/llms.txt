@@ -2,7 +2,7 @@
 
 > BACnet Studio is a client-side web application for planning, diagramming, calculating, validating, and troubleshooting BACnet networks. It models BACnet/IP, BACnet/SC, MS/TP, ARCNET and ALC ARC156, BBMD/BDT/FDR relationships, IP/VLAN boundaries, connectivity tests, and physical cabling.
 
-Canonical URL: https://ace-iot-solutions.github.io/bacnet-subnetting-primer/
+Canonical URL: https://ace-iot-solutions.github.io/bacnet-planning-studio/
 
 ## Tools
 
