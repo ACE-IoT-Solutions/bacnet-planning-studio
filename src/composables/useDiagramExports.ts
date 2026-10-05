@@ -1,4 +1,6 @@
 import { ref, type Ref } from 'vue';
+import brandLogoSvg from '../assets/brand/bacnet-studio.svg?raw';
+import brandLogoWhiteSvg from '../assets/brand/bacnet-studio-white.svg?raw';
 import { createBbmdReport } from '../lib/bbmd-report';
 import { appendBbmdReportPages } from '../lib/export-bbmd-pdf';
 import { appendPhysicalSchedulePages } from '../lib/export-physical-pdf';
@@ -86,21 +88,20 @@ export function useDiagramExports(options: DiagramExportOptions) {
     style.textContent = `${SVG_EXPORT_STYLES}${SVG_SC_LINK_STYLES}${SVG_BACNET_RELATIONSHIP_STYLES}${SVG_CONNECTION_STYLES}${SVG_PHYSICAL_STYLES}${theme === 'light' ? PDF_LIGHT_STYLES : ''}${SUBNET_ACCENT_EXPORT_STYLES}`;
     clone.prepend(style);
     if (branded) {
-      const appLogo = document.querySelector<SVGSVGElement>('.logo-icon-svg');
-      if (appLogo) {
-        const logo = appLogo.cloneNode(true) as SVGSVGElement;
-        logo.removeAttribute('style');
-        logo.setAttribute('class', 'export-ace-logo');
-        logo.setAttribute('x', '36');
-        logo.setAttribute('y', '15');
-        logo.setAttribute('width', '170');
-        logo.setAttribute('height', '47');
-        clone.querySelector('.export-bg')?.after(logo);
-        clone.querySelector('.export-title')?.setAttribute('x', '230');
-        clone.querySelector('.export-title')?.setAttribute('y', '37');
-        clone.querySelector('.export-notes')?.setAttribute('x', '230');
-        clone.querySelector('.export-notes')?.setAttribute('y', '59');
-      }
+      const logo = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+      const logoSource = theme === 'light' ? brandLogoSvg : brandLogoWhiteSvg;
+      logo.setAttribute('class', 'export-ace-logo');
+      logo.setAttribute('href', `data:image/svg+xml,${encodeURIComponent(logoSource)}`);
+      logo.setAttribute('x', '36');
+      logo.setAttribute('y', '10');
+      logo.setAttribute('width', '170');
+      logo.setAttribute('height', '52');
+      logo.setAttribute('preserveAspectRatio', 'xMinYMid meet');
+      clone.querySelector('.export-bg')?.after(logo);
+      clone.querySelector('.export-title')?.setAttribute('x', '230');
+      clone.querySelector('.export-title')?.setAttribute('y', '37');
+      clone.querySelector('.export-notes')?.setAttribute('x', '230');
+      clone.querySelector('.export-notes')?.setAttribute('y', '59');
     }
     return `<?xml version="1.0" encoding="UTF-8"?>\n${new XMLSerializer().serializeToString(clone)}`;
   }

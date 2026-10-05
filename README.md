@@ -35,6 +35,7 @@ This is designed for control engineers, network integrators, and building automa
 - **Core:** Vue 3, TypeScript, and modern ESM modules
 - **Styling:** Custom responsive CSS3 with glassmorphism effects and modern typography
 - **Graphics:** Dynamic animated vector SVGs for all diagram elements
+- **Visual identity:** Master light/dark logos, logomarks, and the identity sheet live in `src/assets/brand/`; browser, install, and social-preview derivatives live in `public/`.
 - **Project schema:** Version 2 with automatic migration of diagram and planner v1 files; see `docs/schema/diagram-project-v2.md`
 - **Agent discovery:** The deployed app publishes `llms.txt`, `capabilities.json`, a browser-accessible agent guide, and JSON Schemas for diagram and planner project files under `schemas/`.
 - **Local Dev Server:** Vite (optional, zero-config)
