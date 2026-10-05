@@ -1,1 +1,6 @@
-[]
+[
+  {
+    "level": "error",
+    "message": "BMS Server BMS network interface must be assigned to a BACnet/SC hub or HA hub."
+  }
+]

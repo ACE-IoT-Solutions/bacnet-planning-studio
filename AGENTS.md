@@ -36,8 +36,14 @@ Conventions and daily commands for contributors/agents working on this repositor
 │   │   ├── CalculatorPage.vue
 │   │   ├── PrimerPage.vue
 │   │   ├── PlannerPage.vue
+│   │   ├── diagram/           # Diagram editors, dialogs, diagnostics, and SVG views
+│   │   ├── primer/            # Extracted primer sections and scenarios
 │   │   └── TerminalLog.vue
+│   ├── composables/           # Shared reactive project and handoff workflows
 │   ├── lib/                   # TypeScript helper modules
+│   │   ├── fixtures/          # Frozen schema-compatibility projects and baselines
+│   │   ├── physical.ts        # Physical-layer schema and factories
+│   │   ├── physical-*.ts      # Physical diagnostics, graph, limits, and layout
 │   │   ├── subnet.ts          # IP calculations library
 │   │   ├── planner.ts         # Planner logic & auto-size algorithm
 │   │   └── export-xlsx.ts     # Dynamic Excel sheet builder

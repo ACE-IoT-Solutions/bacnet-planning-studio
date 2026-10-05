@@ -1,1 +1,6 @@
-[]
+[
+  {
+    "level": "warning",
+    "message": "Imported BBMD 2 and Imported BBMD 3 do not have a mutual BDT relationship."
+  }
+]

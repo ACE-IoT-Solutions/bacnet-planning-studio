@@ -1,1 +1,159 @@
-{"version":1,"title":"Imported ACE BBMD Topology","notes":"Frozen private-range import","subnets":[],"infrastructure":[],"paths":[],"viewMode":"networks"}
+{
+  "version": 1,
+  "title": "Imported ACE BBMD Topology",
+  "notes": "Imported from ACE BBMD Manager state store. All 3 inferred networks default to /24; review and correct subnet definitions where needed.",
+  "subnets": [
+    {
+      "id": "subnet-loyw3v28-eo1eee",
+      "name": "Imported BBMD Network 1",
+      "address": "172.20.10.0",
+      "cidr": 24,
+      "vlan": "",
+      "color": "#c1d200",
+      "devices": [
+        {
+          "id": "device-loyw3v28-g3plll",
+          "name": "Imported BBMD 1",
+          "kind": "controller",
+          "notes": "Imported from ACE BBMD Manager state store · verify inferred /24 subnet",
+          "nics": [
+            {
+              "id": "nic-loyw3v28-hjdsss",
+              "name": "BACnet/IP interface",
+              "addresses": [
+                {
+                  "id": "address-loyw3v28-iz2",
+                  "subnetId": "subnet-loyw3v28-eo1eee",
+                  "ip": "172.20.10.10",
+                  "label": "Primary"
+                }
+              ],
+              "bacnetIpEnabled": true,
+              "bacnetScEnabled": false,
+              "scHubRole": "node",
+              "scHubUri": "",
+              "scFailoverHubUri": "",
+              "scHubId": "",
+              "scHubL3Reachable": false
+            }
+          ],
+          "bbmdEnabled": true,
+          "bdtPeerDeviceIds": [
+            "device-loyw3v28-lueeee"
+          ],
+          "foreignDeviceBbmdId": ""
+        }
+      ],
+      "networkType": "bacnet-ip",
+      "udpPort": 47808,
+      "bacnetNetworkNumber": "",
+      "mstpBaudRate": 38400,
+      "mstpMaxMaster": 127,
+      "arcnetDataRate": 2500,
+      "upstreamSubnetId": "",
+      "routerId": ""
+    },
+    {
+      "id": "subnet-loyw3v28-keq777",
+      "name": "Imported BBMD Network 2",
+      "address": "172.20.20.0",
+      "cidr": 24,
+      "vlan": "",
+      "color": "#94d8ff",
+      "devices": [
+        {
+          "id": "device-loyw3v28-lueeee",
+          "name": "Imported BBMD 2",
+          "kind": "controller",
+          "notes": "Imported from ACE BBMD Manager state store · verify inferred /24 subnet",
+          "nics": [
+            {
+              "id": "nic-loyw3v28-na2lll",
+              "name": "BACnet/IP interface",
+              "addresses": [
+                {
+                  "id": "address-loyw3v28-opqsss",
+                  "subnetId": "subnet-loyw3v28-keq777",
+                  "ip": "172.20.20.10",
+                  "label": "Primary"
+                }
+              ],
+              "bacnetIpEnabled": true,
+              "bacnetScEnabled": false,
+              "scHubRole": "node",
+              "scHubUri": "",
+              "scFailoverHubUri": "",
+              "scHubId": "",
+              "scHubL3Reachable": false
+            }
+          ],
+          "bbmdEnabled": true,
+          "bdtPeerDeviceIds": [
+            "device-loyw3v28-g3plll",
+            "device-loyw3v28-rl3777"
+          ],
+          "foreignDeviceBbmdId": ""
+        }
+      ],
+      "networkType": "bacnet-ip",
+      "udpPort": 47808,
+      "bacnetNetworkNumber": "",
+      "mstpBaudRate": 38400,
+      "mstpMaxMaster": 127,
+      "arcnetDataRate": 2500,
+      "upstreamSubnetId": "",
+      "routerId": ""
+    },
+    {
+      "id": "subnet-loyw3v28-q5f",
+      "name": "Imported BBMD Network 3",
+      "address": "172.20.30.0",
+      "cidr": 24,
+      "vlan": "",
+      "color": "#a78bfa",
+      "devices": [
+        {
+          "id": "device-loyw3v28-rl3777",
+          "name": "Imported BBMD 3",
+          "kind": "controller",
+          "notes": "Imported from ACE BBMD Manager state store · verify inferred /24 subnet",
+          "nics": [
+            {
+              "id": "nic-loyw3v28-t0reee",
+              "name": "BACnet/IP interface",
+              "addresses": [
+                {
+                  "id": "address-loyw3v28-ugflll",
+                  "subnetId": "subnet-loyw3v28-q5f",
+                  "ip": "172.20.30.10",
+                  "label": "Primary"
+                }
+              ],
+              "bacnetIpEnabled": true,
+              "bacnetScEnabled": false,
+              "scHubRole": "node",
+              "scHubUri": "",
+              "scFailoverHubUri": "",
+              "scHubId": "",
+              "scHubL3Reachable": false
+            }
+          ],
+          "bbmdEnabled": true,
+          "bdtPeerDeviceIds": [],
+          "foreignDeviceBbmdId": ""
+        }
+      ],
+      "networkType": "bacnet-ip",
+      "udpPort": 47809,
+      "bacnetNetworkNumber": "",
+      "mstpBaudRate": 38400,
+      "mstpMaxMaster": 127,
+      "arcnetDataRate": 2500,
+      "upstreamSubnetId": "",
+      "routerId": ""
+    }
+  ],
+  "infrastructure": [],
+  "paths": [],
+  "viewMode": "networks"
+}

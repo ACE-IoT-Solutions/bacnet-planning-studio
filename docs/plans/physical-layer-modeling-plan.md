@@ -376,3 +376,52 @@ Add `@vue/test-utils` and `jsdom` as dev dependencies in Phase 3 (first componen
 | 7 Hardening + release | S | 4, 5, 6 |
 
 Phases 5 and 6 can run in parallel with 4 once Phase 3 has landed.
+
+---
+
+## 11. Implementation review (2026-09-27)
+
+Reviewed commit: `07200f0` ("feat: add physical layer modeling and ARC156 support"), pushed to `deploy`; the Pages deployment for it succeeded, so 1.2.0 is live. `npm run typecheck`, `npm test` (22 files, 101 tests) and `npm run build` all pass.
+
+### 11.1 Verification performed
+
+The committed fixtures do not exercise the compatibility contract (see 11.2), so compatibility was verified independently: the 1.1.0 library (`network-diagram.ts`, `planner.ts`, `subnet.ts`, `ace-bbmd-state.ts` at `f1b2cc8`) was used to generate real 1.1.0 projects, which were then pushed through the 1.2.0 loader. Cases: default project, empty project, full planner import (IP with split horizon, port-separated network, SC hub with failover, BMS as FDR, MS/TP, ARCNET), the real ACE BBMD state file, and a legacy pre-NIC project with device-level `ip`, `additionalInterfaces`, a `bbmd` infrastructure item, a standalone `bacnet-sc` subnet and host-id path hops. Every case: accepted by the new validator, migrated to `version: 2` with an empty disabled `physical` block, produced identical diagnostic messages to 1.1.0, migrated idempotently, and its legacy export was accepted by the 1.1.0 validator with the same diagnostics. Planner v1 files load unchanged.
+
+Verdict: **the compatibility contract in §1.3 holds.** The evidence for it in the repository does not.
+
+### 11.2 Findings
+
+Ordered by importance.
+
+1. **Frozen fixtures are hollow.** All five diagram fixtures in `src/lib/fixtures/` have `subnets: []`; every `.diagnostics.json` baseline is `[]`. `fixtures/README.md` describes them as 1.1.0 captures, which they are not. `fixtures.test.ts` passes trivially. Phase 1 step 1 is therefore not done.
+2. **Component extraction is cosmetic.** `NetworkDiagramPage.vue` is 1426 lines (was 1616). `LogicalDiagramSvg.vue` receives an untyped `Record<string, any>` model of roughly forty computeds and functions; `SubnetEditorCard.vue` receives an `actions` bag of 24 callbacks. `useDiagramProject` holds only the ref and autosave. `DeviceEditor`, `NicEditor` and the dialog components from Phase 3 were not extracted. The 500-line budget is still exceeded.
+3. **Physical view is rudimentary.** `physical-layout.ts` stacks nodes vertically per location lane; every link is a four-point polyline dropped below the nodes with no lane assignment or crossing avoidance; MS/TP and ARC156 segments are drawn as full-width horizontal lines at the bottom of the canvas rather than as member chains; the logical overlay draws straight lines between node centres. Functional, but well short of Phase 4 step 1.
+4. **Limit tables are uncited.** `physical-limits.ts` was required to carry a source per row. The MS/TP per-baud, per-gauge length table is invented ("conservative"); ASHRAE 135 Clause 9 gives 1200 m. The ARC156 610 m and 32-node limits reference "installation guides" without naming one. Fiber and PoE rows are consistent with IEEE 802.3 and TIA-568.
+5. **ARCNET data-rate regression.** The select option changed from `156` to `156.25` in both planner and diagram cards. v1 projects saved with `arcnetDataRate: 156` now show a blank Data rate select. The 1→2 migration should map 156 to 156.25.
+6. **Legacy export keeps `viewMode: 'physical'`.** 1.1.0 has no such option; it falls back to detailed behaviour but the select renders blank. `toLegacyDiagramProject` should map it to `'detailed'`.
+7. **`MSTP-ORDER` / `ARCNET-ORDER` miss router devices.** The mid-chain check only counts `infrastructure` members, but BACnet routers are devices (`requiredForRouting`), and Auto-chain inserts them as devices. A router device mid-chain is never reported.
+8. **Port generation UX.** "Generate ports" uses `window.prompt` and silently replaces existing ports, pruning any cables attached to them, with no confirmation. Plan called for a dialog.
+9. **Scope shortfalls against Phase 6/7.** The primer section is a static four-card block, not the interactive scenarios. `CLAUDE.md` / `AGENTS.md` project layout was not updated for `src/components/diagram/`, `src/composables/` and `src/lib/fixtures/`. New tests are mostly single happy-path cases (export tests count rows; the PDF test mocks jsPDF and counts pages).
+10. **Process.** Delivered as one commit straight to the deployment branch instead of one squash-merged PR per phase on a feature branch.
+
+Items confirmed working: schema versioning and migration registry, typed endpoint references, `pruneDanglingReferences` called from `normalizeDiagramProject` and every UI remove action, diagnostics with `code`/`targets` and click-to-focus, `info` level hidden behind "Show hints", gating of physical diagnostics, planner physical hints with handoff confirmation, storage-key constants, XLSX/PDF schedule exports, glossary entries, legacy JSON export, and the ACE state import warning when physical data would be lost.
+
+### 11.3 Follow-up work
+
+Priority A (correctness, small; one PR on a feature branch):
+
+- [x] Replace the fixtures with real 1.1.0 captures generated from the `f1b2cc8` library (the six cases in 11.1) and regenerate their diagnostics baselines from 1.1.0 output; keep the "never regenerate" rule from that point on.
+- [x] Add migration step: `arcnetDataRate === 156` → `156.25` (diagram and planner).
+- [x] `toLegacyDiagramProject`: map `viewMode: 'physical'` to `'detailed'`.
+- [x] Cite each row of `physical-limits.ts`; replace the invented MS/TP derating table with the ASHRAE 135 1200 m limit unless a source for derating is found.
+- [x] Extend the mid-chain check to router devices.
+
+Priority B (quality; separate PRs):
+
+- [x] Finish the Phase 3 extraction: typed props for `LogicalDiagramSvg`, `DeviceEditor`/`NicEditor`, dialogs, and move remove actions into `useDiagramProject`; bring `NetworkDiagramPage.vue` under 500 lines.
+- [x] Physical layout: lane-assigned orthogonal link routing, segments drawn as member chains with per-member termination/bias glyphs.
+- [x] Replace the `window.prompt` port generator with the planned dialog and confirm before replacing ports that have cables.
+- [x] Deepen tests: negative cases per rule, export row content snapshots, layout tests on a multi-lane fixture.
+- [x] Update `CLAUDE.md` / `AGENTS.md` layout section; add interactive physical-layer primer scenarios.
+
+Extraction complete: `LogicalDiagramSvg` has a fully typed model contract; `DeviceEditor`, `NicEditor`, and all six diagram dialogs are separate components; destructive remove actions live in `useDiagramProject`; and focused import, export, editor, and logical-link composables reduce `NetworkDiagramPage.vue` to 497 lines.

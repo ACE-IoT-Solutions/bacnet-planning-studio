@@ -1,1 +1,43 @@
-{"version":1,"kind":"ace-bacnet-network-plan","splitHorizon":false,"subnets":[{"id":"wizard-1","name":"Building Subnet 1","ip":"192.168.1.0","cidr":24,"gatewayOffset":1,"vlan":10,"port":47808,"bbmdEnabled":false,"bbmdOffset":10,"bmsPlaced":false,"bmsRole":"none","fdrTargetSubnetId":""}]}
+{
+  "version": 1,
+  "kind": "ace-bacnet-network-plan",
+  "splitHorizon": false,
+  "subnets": [
+    {
+      "id": "wizard-a",
+      "name": "Main BAS",
+      "ip": "192.168.50.0",
+      "cidr": 24,
+      "gatewayOffset": 1,
+      "vlan": 50,
+      "port": 47808,
+      "bbmdEnabled": true,
+      "bbmdOffset": 10,
+      "bmsPlaced": true,
+      "bmsRole": "bbmd",
+      "fdrTargetSubnetId": "",
+      "plannedDevices": 40,
+      "routeTargets": [
+        "wizard-b"
+      ]
+    },
+    {
+      "id": "wizard-b",
+      "name": "Remote BAS",
+      "ip": "192.168.60.0",
+      "cidr": 24,
+      "gatewayOffset": 1,
+      "vlan": 60,
+      "port": 47808,
+      "bbmdEnabled": true,
+      "bbmdOffset": 10,
+      "bmsPlaced": false,
+      "bmsRole": "none",
+      "fdrTargetSubnetId": "",
+      "plannedDevices": 20,
+      "routeTargets": [
+        "wizard-a"
+      ]
+    }
+  ]
+}

@@ -10,5 +10,7 @@ describe('physical PDF schedules', () => {
     const pdf = { addPage: vi.fn(), setFillColor: vi.fn(), rect: vi.fn(), setTextColor: vi.fn(), setFontSize: vi.fn(), text: vi.fn() };
     appendPhysicalSchedulePages(pdf as never, project, { projectTitle: 'Test', includeCables: true, includeSerial: false, theme: 'light' });
     expect(pdf.addPage).toHaveBeenCalledTimes(2);
+    expect(pdf.text).toHaveBeenCalledWith('Cable Schedule', 36, 60);
+    expect(pdf.text.mock.calls.some(call => String(call[0]).includes('copper-utp'))).toBe(true);
   });
 });

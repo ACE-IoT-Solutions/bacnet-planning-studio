@@ -20,6 +20,9 @@ export function migrateDiagramProject(raw: unknown): DiagramProject {
   }
   project.physical ??= createEmptyPhysicalLayer();
   project.physical.arcnetSegments ??= [];
+  for (const subnet of project.subnets) {
+    if (subnet.networkType === 'arcnet' && subnet.arcnetDataRate === 156) subnet.arcnetDataRate = 156.25;
+  }
   return normalizeDiagramProject(project);
 }
 
@@ -27,6 +30,9 @@ export function migratePlannerProject(raw: unknown): PlannerProject {
   if (!isPlannerProject(raw)) throw new Error('This file is not a supported BACnet Studio planner project.');
   const project = clone(raw) as unknown as PlannerProject;
   project.version = 2;
+  for (const subnet of project.subnets) {
+    if (subnet.networkType === 'arcnet' && subnet.arcnetDataRate === 156) subnet.arcnetDataRate = 156.25;
+  }
   return project;
 }
 
@@ -39,6 +45,7 @@ export function toLegacyDiagramProject(project: DiagramProject): LegacyDiagramPr
     ? { ...item, kind: 'gateway', notes: `${item.notes}${item.notes ? ' · ' : ''}Originally modeled as ${item.kind} in schema v2.` }
     : item);
   delete (copy as Partial<DiagramProject>).physical;
+  if (copy.viewMode === 'physical') copy.viewMode = 'detailed';
   copy.version = 1 as never;
   return copy as unknown as LegacyDiagramProject;
 }

@@ -102,6 +102,21 @@ describe('serial wiring diagnostics', () => {
     expect(getPhysicalDiagnostics(project).map(item => item.code)).toEqual(expect.arrayContaining(['MSTP-TERM', 'MSTP-ORDER']));
   });
 
+  it('reports a BACnet router device placed mid-chain', () => {
+    const { project, a, b } = physicalProject();
+    const mstp = createSubnet(2); mstp.networkType = 'mstp'; mstp.bacnetNetworkNumber = '2001'; mstp.devices = [a, b]; project.subnets[0].devices = []; project.subnets.push(mstp);
+    for (const device of mstp.devices) device.nics[0].addresses[0].subnetId = mstp.id;
+    b.requiredForRouting = true;
+    const segment = createMstpSegment(mstp.id);
+    segment.members = [
+      { ref: { kind: 'device', deviceId: a.id }, terminated: true, biasSource: true },
+      { ref: { kind: 'device', deviceId: b.id }, terminated: false, biasSource: false },
+      { ref: { kind: 'device', deviceId: a.id }, terminated: true, biasSource: false }
+    ];
+    project.physical.mstpSegments.push(segment);
+    expect(getPhysicalDiagnostics(project).map(item => item.code)).toContain('MSTP-ORDER');
+  });
+
   it('models ALC ARC156 with its 610 m and 32-node segment constraints', () => {
     expect(ARC156_BAUD).toBe(156250);
     const { project, a, b } = physicalProject();

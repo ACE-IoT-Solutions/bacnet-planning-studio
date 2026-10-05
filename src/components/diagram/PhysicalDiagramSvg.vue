@@ -20,12 +20,15 @@
         <circle class="physical-port" :cx="port.x" :cy="port.y" r="4"><title>{{ port.label }}</title></circle>
       </g>
     </g>
-    <g v-for="(segment, index) in serialSegments" :key="segment.id" :class="['serial-segment', { 'diagnostic-target-highlight': highlightedTargets.includes(`segment-${segment.id}`) }]" role="button" tabindex="0" @click="$emit('focus', 'segment', segment.id)" @keydown.enter="$emit('focus', 'segment', segment.id)">
-      <line :class="['serial-bus', segment.protocol]" x1="40" :y1="layout.height - 42 - index * 18" :x2="layout.width - 40" :y2="layout.height - 42 - index * 18" />
-      <rect v-if="segment.members[0]?.terminated" class="serial-termination" x="36" :y="layout.height - 47 - index * 18" width="8" height="10"><title>End termination</title></rect>
-      <rect v-if="segment.members.at(-1)?.terminated" class="serial-termination" :x="layout.width - 44" :y="layout.height - 47 - index * 18" width="8" height="10"><title>End termination</title></rect>
-      <path v-if="segment.members.some(member => member.biasSource)" class="serial-bias" :d="`M ${layout.width / 2} ${layout.height - 51 - index * 18} l 5 9 h -10 z`"><title>Bias source</title></path>
-      <text class="serial-label" x="44" :y="layout.height - 48 - index * 18">{{ segment.name }} · {{ segment.members.length }} nodes</text>
+    <g v-for="segment in layout.serialSegments" :key="segment.id" :class="['serial-segment', { 'diagnostic-target-highlight': highlightedTargets.includes(`segment-${segment.id}`) }]" role="button" tabindex="0" @click="$emit('focus', 'segment', segment.id)" @keydown.enter="$emit('focus', 'segment', segment.id)">
+      <line v-if="segment.members.length > 1" :class="['serial-bus', segment.protocol]" :x1="segment.members[0].x" :y1="segment.y" :x2="segment.members.at(-1)!.x" :y2="segment.y" />
+      <text class="serial-label" x="40" :y="segment.y - 24">{{ segment.name }} · {{ segment.members.length }} nodes</text>
+      <g v-for="member in segment.members" :key="member.id">
+        <circle :class="['serial-member', segment.protocol]" :cx="member.x" :cy="member.y" r="7"><title>{{ member.label }}</title></circle>
+        <rect v-if="member.terminated" class="serial-termination" :x="member.x - 5" :y="member.y - 17" width="10" height="7"><title>Termination · {{ member.label }}</title></rect>
+        <path v-if="member.biasSource" class="serial-bias" :d="`M ${member.x} ${member.y + 10} l 6 10 h -12 z`"><title>Bias source · {{ member.label }}</title></path>
+        <text class="serial-member-label" :x="member.x" :y="member.y + 34" text-anchor="middle">{{ member.label.length > 18 ? `${member.label.slice(0, 17)}…` : member.label }}</text>
+      </g>
     </g>
   </svg>
 </template>
@@ -39,10 +42,6 @@ const props = withDefaults(defineProps<{ project: DiagramProject; highlightedTar
 defineEmits<{ focus: [kind: ConfigTargetKind, id: string] }>();
 const svg = ref<SVGSVGElement | null>(null);
 const layout = computed(() => layoutPhysicalDiagram(props.project));
-const serialSegments = computed(() => [
-  ...props.project.physical.mstpSegments.map(item => ({ ...item, protocol: 'mstp' })),
-  ...props.project.physical.arcnetSegments.map(item => ({ ...item, protocol: 'arcnet' }))
-]);
-const serialCount = computed(() => serialSegments.value.length);
+const serialCount = computed(() => layout.value.serialSegments.length);
 defineExpose({ svg });
 </script>

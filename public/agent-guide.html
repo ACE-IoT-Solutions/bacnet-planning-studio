@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent &amp; data access | BACnet Studio by ACE IoT</title>
+  <meta name="description" content="Machine-readable capabilities, routes, project schemas, and browser-automation guidance for BACnet Studio.">
+  <link rel="canonical" href="https://ace-iot-solutions.github.io/bacnet-subnetting-primer/agent-guide.html">
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #101118; color: #f4f5f7; }
+    body { max-width: 880px; margin: 0 auto; padding: 2rem 1.25rem 4rem; line-height: 1.6; }
+    h1, h2 { line-height: 1.2; } h2 { margin-top: 2rem; }
+    a { color: #94d8ff; } code { color: #c1d200; } li + li { margin-top: .45rem; }
+    .notice { padding: 1rem; border: 1px solid #39404f; border-radius: .65rem; background: #171923; }
+  </style>
+</head>
+<body>
+  <main>
+    <p><a href="./">← BACnet Studio</a></p>
+    <h1>Agent &amp; data access</h1>
+    <p>BACnet Studio is a static, client-side application. Browser-capable agents can operate its labeled controls; agents that need to inspect or generate project files should use the published JSON Schemas.</p>
+
+    <h2>Machine-readable resources</h2>
+    <ul>
+      <li><a href="./llms.txt">LLM-oriented application summary</a></li>
+      <li><a href="./capabilities.json">Capability manifest</a></li>
+      <li><a href="./schemas/diagram-project-v2.schema.json">Diagram project JSON Schema v2</a></li>
+      <li><a href="./schemas/planner-project-v2.schema.json">Planner project JSON Schema v2</a></li>
+    </ul>
+
+    <h2>Stable navigation</h2>
+    <ul>
+      <li><a href="./#planner"><code>#planner</code> — Network Planner</a></li>
+      <li><a href="./#diagram"><code>#diagram</code> — Diagram Builder</a></li>
+      <li><a href="./#calculator"><code>#calculator</code> — Calculator &amp; Simulator</a></li>
+      <li><a href="./#primer"><code>#primer</code> — Interactive Primer</a></li>
+      <li><a href="./#glossary"><code>#glossary</code> — Glossary</a></li>
+    </ul>
+
+    <h2>Project files</h2>
+    <p>Planner and diagram files are separate JSON formats. Both current formats use <code>version: 2</code>. The app accepts supported version 1 files and migrates them during import. Validate generated files against the appropriate schema before selecting <strong>Load plan</strong> or <strong>Open JSON</strong>.</p>
+    <p>The Diagram Builder also exports a legacy version 1 file. That compatibility export omits physical-layer data and is not the preferred interchange format.</p>
+
+    <h2>Browser automation</h2>
+    <ol>
+      <li>Navigate directly to the tool’s hash route.</li>
+      <li>Use accessible names and visible labels instead of layout-dependent coordinates.</li>
+      <li>Wait for reactive previews and diagnostics after changing a field.</li>
+      <li>Treat reset, clear, replace, remove, and import actions as potentially destructive.</li>
+      <li>Expect downloads to be generated locally as browser blobs.</li>
+    </ol>
+
+    <div class="notice"><strong>No remote API:</strong> BACnet Studio does not currently provide REST, GraphQL, OpenAPI, or MCP tools. Calculations and project state remain in the browser.</div>
+  </main>
+</body>
+</html>

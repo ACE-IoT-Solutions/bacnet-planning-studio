@@ -41,103 +41,15 @@
             <button class="icon-text-button small" type="button" @click="actions.addDevice(subnet)">+ Device</button>
           </div>
           <div v-if="!subnet.devices.length" class="empty-editor-state">No devices yet. Add the equipment involved in this condition.</div>
-          <div v-for="device in subnet.devices" :id="`config-device-${device.id}`" :key="device.id" tabindex="-1" class="device-editor-block config-target" :class="{ 'config-target-active': activeConfigTarget === `device-${device.id}` }">
-            <div class="device-editor-row">
-              <div class="device-fields">
-                <input v-model="device.name" type="text" aria-label="Device name" placeholder="Device name">
-                <select v-model="device.kind" aria-label="Device type">
-                  <option v-for="option in deviceKindOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-                </select>
-                <span class="device-address-count">{{ device.nics.length }} NIC{{ device.nics.length === 1 ? '' : 's' }} · {{ actions.addressCount(device) }} address{{ actions.addressCount(device) === 1 ? '' : 'es' }}</span>
-              </div>
-              <button class="row-remove-button" type="button" title="Remove device" @click="actions.removeDevice(subnet, device.id)">×</button>
-            </div>
-            <div class="device-secondary-actions">
-              <button class="device-move-button" type="button" :disabled="!actions.movableSubnets(subnet).length" :title="actions.movableSubnets(subnet).length ? 'Move this device and its local addresses to another subnet' : 'Add another compatible subnet before moving this device'" @click="actions.openMoveDeviceDialog(device, subnet)">Move to subnet</button>
-            </div>
-            <AceToggle :model-value="Boolean(device.requiredForRouting)" label="BACnet router / bridge between datalinks" description="Route between services or networks assigned to this device's NICs" @update:model-value="device.requiredForRouting = $event" />
-            <AceToggle v-if="(!subnet.networkType || subnet.networkType === 'bacnet-ip') && device.nics.some(nic => nic.bacnetIpEnabled)" :model-value="Boolean(device.bbmdEnabled)" label="Hosts a BBMD service" description="This BACnet device also distributes BACnet/IP broadcasts" @update:model-value="actions.setDeviceBbmd(device, $event)" />
-            <details v-if="device.bbmdEnabled" class="device-relationship-editor bdt-peer-editor">
-              <summary>
-                <span>Broadcast Distribution Table</span>
-                <em>{{ device.bdtPeerDeviceIds?.length ?? 0 }} {{ (device.bdtPeerDeviceIds?.length ?? 0) === 1 ? 'peer' : 'peers' }}</em>
-              </summary>
-              <div class="bdt-peer-editor-body">
-                <span class="field-hint">Select a BBMD to create or remove a mutual BDT relationship.</span>
-                <span v-if="!actions.otherBbmdDevices(device, subnet.id).length" class="field-hint">Enable BBMD service on a device in another IP subnet to create BDT relationships.</span>
-                <div v-else class="subnet-checkboxes">
-                  <label v-for="peer in actions.otherBbmdDevices(device, subnet.id)" :key="peer.device.id" class="checkbox-chip">
-                    <input type="checkbox" :checked="actions.isBdtPeer(device, peer.device.id)" @change="actions.toggleBdtPeer(device, peer.device.id)">
-                    <span>{{ peer.device.name }} · {{ peer.subnet.name }}</span>
-                  </label>
-                </div>
-              </div>
-            </details>
-            <div v-if="(!subnet.networkType || subnet.networkType === 'bacnet-ip') && device.nics.some(nic => nic.bacnetIpEnabled)" class="device-relationship-editor">
-              <label :for="`fdr-target-${device.id}`">Foreign Device Registration</label>
-              <select :id="`fdr-target-${device.id}`" v-model="device.foreignDeviceBbmdId">
-                <option value="">Not registered as a foreign device</option>
-                <option v-for="target in actions.foreignBbmdOptions(device, subnet.id)" :key="target.device.id" :value="target.device.id">{{ target.device.name }} · {{ target.subnet.name }}</option>
-              </select>
-              <span class="field-hint">Registers this device with a BBMD on another IP subnet and adds it to that BBMD's Foreign Device Table.</span>
-            </div>
-            <div class="interface-summary"><span>Network interfaces and assigned addresses</span><button type="button" @click="actions.addDeviceNic(device, subnet.id)">+ Add NIC</button></div>
-            <div v-for="(nic, nicIndex) in device.nics" :id="`config-nic-${nic.id}`" :key="nic.id" tabindex="-1" class="nic-editor-card config-target" :class="{ 'config-target-active': activeConfigTarget === `nic-${nic.id}` }">
-              <div class="nic-editor-heading">
-                <input v-model="nic.name" type="text" aria-label="NIC name" placeholder="NIC name">
-                <button type="button" @click="actions.addNicAddress(nic, subnet.id)">+ Address</button>
-                <button class="row-remove-button" type="button" :disabled="device.nics.length <= 1" title="Remove NIC" @click="actions.removeDeviceNic(device, nic.id)">×</button>
-              </div>
-              <div class="device-service-selection"><AceCheckbox :model-value="Boolean(nic.bacnetIpEnabled)" label="BACnet/IP" @update:model-value="nic.bacnetIpEnabled = $event" /><AceCheckbox :model-value="Boolean(nic.bacnetScEnabled)" label="BACnet/SC" @update:model-value="nic.bacnetScEnabled = $event" /></div>
-              <div v-if="nic.bacnetScEnabled" class="form-group compact-group sc-hub-assignment"><label>SC role</label><select v-model="nic.scHubRole"><option value="node">Node</option><option value="hub">Hub</option><option value="ha-hub">HA hub</option></select><template v-if="nic.scHubRole === 'hub' || nic.scHubRole === 'ha-hub'"><label>Hub WebSocket URI</label><input v-model="nic.scHubUri" type="text" placeholder="wss://device-hub.example.com"><template v-if="nic.scHubRole === 'ha-hub'"><label>Failover hub URI</label><input v-model="nic.scFailoverHubUri" type="text" placeholder="wss://device-hub-failover.example.com"></template></template><label>{{ nic.scHubRole === 'node' ? 'Hub assignment' : 'Upstream federating hub (optional)' }}</label><select v-model="nic.scHubId"><option value="">{{ nic.scHubRole === 'node' ? 'Choose hub' : 'No upstream — root hub' }}</option><option v-for="hub in actions.scHubsForNic(nic)" :key="hub.id" :value="hub.id">{{ hub.name }} — {{ hub.label }}</option></select><AceToggle :model-value="Boolean(nic.scHubL3Reachable)" label="L3/TLS path verified" @update:model-value="nic.scHubL3Reachable = $event" /></div>
-              <div v-for="(address, addressIndex) in nic.addresses" :key="address.id" class="interface-editor-row">
-                <input v-model="address.label" type="text" aria-label="Address label" :placeholder="addressIndex === 0 && nicIndex === 0 ? 'Primary' : 'Address label'">
-                <select v-model="address.subnetId" aria-label="Address network">
-                  <option value="">Choose network</option>
-                  <option v-for="optionSubnet in actions.compatibleAddressNetworks(subnet)" :key="optionSubnet.id" :value="optionSubnet.id">{{ optionSubnet.name }}</option>
-                </select>
-                <input v-model="address.ip" type="text" :aria-label="actions.addressFieldLabel(address)" :placeholder="actions.addressFieldLabel(address)" :class="actions.addressEntryClass(address)">
-                <button class="row-remove-button" type="button" :disabled="nic.addresses.length <= 1" title="Remove address" @click="actions.removeNicAddress(nic, address.id)">×</button>
-              </div>
-            </div>
-          </div>
+          <DeviceEditor v-for="device in subnet.devices" :key="device.id" :device="device" :subnet="subnet" :active-config-target="activeConfigTarget" :device-kind-options="deviceKindOptions" :actions="actions" />
         </article>
 </template>
 
 <script setup lang="ts">
-import AceCheckbox from '../AceCheckbox.vue';
 import AceToggle from '../AceToggle.vue';
-import type { DeviceKind, DiagramDevice, DiagramDeviceAddress, DiagramNic, DiagramProject, DiagramSubnet } from '../../lib/network-diagram';
-
-interface DeviceSubnetEntry { device: DiagramDevice; subnet: DiagramSubnet }
-interface RoutingDevice { id: string; name: string; ip: string }
-interface ScHubOption { id: string; name: string; label: string }
-interface SubnetEditorActions {
-  removeSubnet(id: string): void;
-  subnetIsValid(subnet: DiagramSubnet): boolean;
-  upstreamNetworkOptions(subnet: DiagramSubnet): DiagramSubnet[];
-  subnetCidr(subnet: DiagramSubnet): string;
-  routingDevicesFor(subnet: DiagramSubnet): RoutingDevice[];
-  addDevice(subnet: DiagramSubnet): void;
-  addressCount(device: DiagramDevice): number;
-  movableSubnets(subnet: DiagramSubnet): DiagramSubnet[];
-  openMoveDeviceDialog(device: DiagramDevice, subnet: DiagramSubnet): void;
-  setDeviceBbmd(device: DiagramDevice, enabled: boolean): void;
-  otherBbmdDevices(device: DiagramDevice, subnetId: string): DeviceSubnetEntry[];
-  isBdtPeer(device: DiagramDevice, peerId: string): boolean;
-  toggleBdtPeer(device: DiagramDevice, peerId: string): void;
-  foreignBbmdOptions(device: DiagramDevice, subnetId: string): DeviceSubnetEntry[];
-  addDeviceNic(device: DiagramDevice, subnetId: string): void;
-  addNicAddress(nic: DiagramNic, subnetId: string): void;
-  removeDeviceNic(device: DiagramDevice, nicId: string): void;
-  scHubsForNic(nic: DiagramNic): ScHubOption[];
-  compatibleAddressNetworks(subnet: DiagramSubnet): DiagramSubnet[];
-  addressFieldLabel(address: DiagramDeviceAddress): string;
-  addressEntryClass(address: DiagramDeviceAddress): Record<string, boolean>;
-  removeNicAddress(nic: DiagramNic, addressId: string): void;
-  removeDevice(subnet: DiagramSubnet, deviceId: string): void;
-  handleDiagramNetworkTypeChange(subnet: DiagramSubnet): void;
-}
+import DeviceEditor from './DeviceEditor.vue';
+import type { DeviceKind, DiagramProject, DiagramSubnet } from '../../lib/network-diagram';
+import type { SubnetEditorActions } from './editor-types';
 
 defineProps<{
   project: DiagramProject; subnet: DiagramSubnet; subnetIndex: number; advancedBacnetPorts: boolean; activeConfigTarget: string;

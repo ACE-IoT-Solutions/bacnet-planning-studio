@@ -1,0 +1,32 @@
+# BACnet Studio by ACE IoT
+
+> BACnet Studio is a client-side web application for planning, diagramming, calculating, validating, and troubleshooting BACnet networks. It models BACnet/IP, BACnet/SC, MS/TP, ARCNET and ALC ARC156, BBMD/BDT/FDR relationships, IP/VLAN boundaries, connectivity tests, and physical cabling.
+
+Canonical URL: https://ace-iot-solutions.github.io/bacnet-subnetting-primer/
+
+## Tools
+
+- [Network Planner](./#planner): Plan BACnet datalinks, addressing, routing, BACnet/SC hubs, serial networks, and physical capacity. Imports and exports versioned planner JSON and exports XLSX.
+- [Diagram Builder](./#diagram): Build logical and physical network diagrams, run diagnostics, import Nmap text or ACE BBMD Manager state, and export JSON, legacy JSON, SVG, PDF, or XLSX.
+- [Calculator & Simulator](./#calculator): Compare IPv4 subnet boundaries and simulate BACnet discovery and directed traffic.
+- [Interactive Primer](./#primer): Learn BACnet networking concepts through explanations and interactive scenarios.
+- [Glossary](./#glossary): Search BACnet and networking terminology. Individual terms use `#glossary/{term-id}`.
+
+## Machine-readable resources
+
+- [Capability manifest](./capabilities.json)
+- [Diagram project JSON Schema v2](./schemas/diagram-project-v2.schema.json)
+- [Planner project JSON Schema v2](./schemas/planner-project-v2.schema.json)
+- [Agent and data guide](./agent-guide.html)
+
+## Operating notes
+
+- This is a static, browser-only application. It does not expose a REST, GraphQL, OpenAPI, or MCP endpoint.
+- Project data remains in browser local storage unless a user explicitly imports, exports, or submits information through a linked service.
+- Use the hash routes above for deterministic navigation.
+- Use visible labels and native browser controls when automating the interface. Destructive actions such as reset, clear, replace, and remove require the same caution as they do for a human user.
+- Diagram project JSON and planner project JSON are distinct formats. Validate generated files against the matching schema before importing them.
+
+## Compatibility
+
+Current diagram and planner exports use schema version 2. The application accepts supported version 1 projects and migrates them on load. Diagram Builder can export a legacy version 1 diagram without physical-layer data.

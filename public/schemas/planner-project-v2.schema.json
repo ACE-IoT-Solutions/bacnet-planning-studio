@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ace-iot-solutions.github.io/bacnet-subnetting-primer/schemas/planner-project-v2.schema.json",
+  "title": "BACnet Studio planner project v2",
+  "description": "A BACnet network plan used by the Network Planner and diagram handoff.",
+  "type": "object",
+  "required": ["version", "kind", "splitHorizon", "subnets"],
+  "properties": {
+    "version": { "const": 2 },
+    "kind": { "const": "ace-bacnet-network-plan" },
+    "splitHorizon": { "type": "boolean" },
+    "subnets": { "type": "array", "items": { "$ref": "#/$defs/plannerSubnet" } }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "numberOrEmpty": { "oneOf": [{ "type": "number" }, { "const": "" }] },
+    "physicalHints": {
+      "type": "object",
+      "properties": {
+        "closetName": { "type": "string" }, "switchCount": { "type": "integer", "minimum": 0 },
+        "portsPerSwitch": { "type": "integer", "minimum": 0 }, "poeDevices": { "type": "integer", "minimum": 0 },
+        "mstpSegments": { "type": "integer", "minimum": 0 }, "mstpSegmentLengthMeters": { "type": "number", "minimum": 0 },
+        "arcnetSegments": { "type": "integer", "minimum": 0 }, "arcnetSegmentLengthMeters": { "type": "number", "minimum": 0 },
+        "cable": { "enum": ["stp-18awg", "stp-22awg", "stp-24awg", "other"] }
+      },
+      "additionalProperties": false
+    },
+    "plannerSubnet": {
+      "type": "object",
+      "required": ["id", "name", "ip", "cidr", "gatewayOffset", "vlan", "port", "bbmdEnabled", "bbmdOffset", "bmsPlaced", "bmsRole", "fdrTargetSubnetId"],
+      "properties": {
+        "id": { "type": "string" }, "name": { "type": "string" }, "ip": { "type": "string" },
+        "cidr": { "type": "integer", "minimum": 0, "maximum": 32 }, "gatewayOffset": { "type": "integer", "minimum": 0 },
+        "vlan": { "$ref": "#/$defs/numberOrEmpty" }, "port": { "$ref": "#/$defs/numberOrEmpty" },
+        "bbmdEnabled": { "type": "boolean" }, "bbmdOffset": { "type": "integer", "minimum": 0 }, "bmsPlaced": { "type": "boolean" },
+        "bmsRole": { "enum": ["none", "bbmd", "fdr"] }, "bmsUsesBacnetIp": { "type": "boolean" }, "bmsUsesBacnetSc": { "type": "boolean" },
+        "fdrTargetSubnetId": { "type": "string" }, "plannedDevices": { "type": "integer", "minimum": 0 },
+        "routeTargets": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "networkType": { "enum": ["bacnet-ip", "bacnet-sc", "mstp", "arcnet"] },
+        "bacnetNetworkNumber": { "$ref": "#/$defs/numberOrEmpty" },
+        "mstpBaudRate": { "enum": [9600, 19200, 38400, 76800, 115200] }, "mstpMaxMaster": { "type": "integer", "minimum": 0, "maximum": 127 },
+        "arcnetDataRate": { "enum": [156.25, 2500, 5000, 10000] }, "upstreamIpSubnetId": { "type": "string" },
+        "routerName": { "type": "string" }, "routerIp": { "type": "string" }, "scPrimaryHubName": { "type": "string" },
+        "scEnabled": { "type": "boolean" }, "scPrimaryHubIp": { "type": "string" }, "scPrimaryHubUri": { "type": "string" },
+        "scFailoverEnabled": { "type": "boolean" }, "scFailoverHubName": { "type": "string" }, "scFailoverHubIp": { "type": "string" },
+        "scFailoverHubUri": { "type": "string" }, "scUnderlaySubnetIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "physical": { "$ref": "#/$defs/physicalHints" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

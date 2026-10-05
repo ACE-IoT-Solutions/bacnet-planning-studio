@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ace-iot-solutions.github.io/bacnet-subnetting-primer/schemas/diagram-project-v2.schema.json",
+  "title": "BACnet Studio diagram project v2",
+  "description": "A logical BACnet topology with optional physical locations, ports, links, and serial buses.",
+  "type": "object",
+  "required": ["version", "title", "notes", "subnets", "infrastructure", "paths", "physical"],
+  "properties": {
+    "version": { "const": 2 },
+    "title": { "type": "string" },
+    "notes": { "type": "string" },
+    "subnets": { "type": "array", "items": { "$ref": "#/$defs/subnet" } },
+    "infrastructure": { "type": "array", "items": { "$ref": "#/$defs/infrastructure" } },
+    "paths": { "type": "array", "items": { "$ref": "#/$defs/testPath" } },
+    "viewMode": { "enum": ["detailed", "networks", "physical"] },
+    "allowSplitHorizonBdt": { "type": "boolean" },
+    "physical": { "$ref": "#/$defs/physicalLayer" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "media": { "enum": ["copper-utp", "copper-stp", "fiber-mm", "fiber-sm", "rs485", "coax", "wireless", "other"] },
+    "poeClass": { "enum": ["none", "af", "at", "bt-type3", "bt-type4"] },
+    "address": {
+      "type": "object",
+      "required": ["id", "subnetId", "ip", "label"],
+      "properties": { "id": { "type": "string" }, "subnetId": { "type": "string" }, "ip": { "type": "string" }, "label": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "nic": {
+      "type": "object",
+      "required": ["id", "name", "addresses"],
+      "properties": {
+        "id": { "type": "string" }, "name": { "type": "string" },
+        "addresses": { "type": "array", "items": { "$ref": "#/$defs/address" } },
+        "bacnetIpEnabled": { "type": "boolean" }, "bacnetScEnabled": { "type": "boolean" },
+        "scHubRole": { "enum": ["node", "hub", "ha-hub"] }, "scHubUri": { "type": "string" },
+        "scFailoverHubUri": { "type": "string" }, "scHubId": { "type": "string" }, "scHubL3Reachable": { "type": "boolean" },
+        "physical": {
+          "type": "object", "required": ["media", "poePowered"],
+          "properties": { "media": { "$ref": "#/$defs/media" }, "speedMbps": { "type": "number", "minimum": 0 }, "poePowered": { "type": "boolean" } },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "device": {
+      "type": "object",
+      "required": ["id", "name", "kind", "notes", "nics"],
+      "properties": {
+        "id": { "type": "string" }, "name": { "type": "string" },
+        "kind": { "enum": ["controller", "workstation", "server", "sensor", "other"] },
+        "notes": { "type": "string" }, "nics": { "type": "array", "items": { "$ref": "#/$defs/nic" } },
+        "requiredForRouting": { "type": "boolean" }, "bbmdEnabled": { "type": "boolean" },
+        "bdtPeerDeviceIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "foreignDeviceBbmdId": { "type": "string" }, "locationId": { "type": "string" }, "poeClass": { "$ref": "#/$defs/poeClass" }
+      },
+      "additionalProperties": false
+    },
+    "subnet": {
+      "type": "object",
+      "required": ["id", "name", "address", "cidr", "vlan", "color", "devices"],
+      "properties": {
+        "id": { "type": "string" }, "name": { "type": "string" }, "address": { "type": "string" },
+        "cidr": { "type": "integer", "minimum": 0, "maximum": 32 }, "vlan": { "type": "string" }, "color": { "type": "string" },
+        "devices": { "type": "array", "items": { "$ref": "#/$defs/device" } },
+        "networkType": { "enum": ["bacnet-ip", "bacnet-sc", "mstp", "arcnet"] },
+        "udpPort": { "oneOf": [{ "type": "integer", "minimum": 1, "maximum": 65535 }, { "const": "" }] },
+        "bacnetNetworkNumber": { "type": "string" }, "mstpBaudRate": { "type": "number", "exclusiveMinimum": 0 },
+        "mstpMaxMaster": { "type": "integer", "minimum": 0, "maximum": 127 }, "arcnetDataRate": { "type": "number", "exclusiveMinimum": 0 },
+        "upstreamSubnetId": { "type": "string" }, "routerId": { "type": "string" }, "scDirectConnections": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "physicalPort": {
+      "type": "object",
+      "required": ["id", "name", "media", "enabled", "vlanMode", "notes"],
+      "properties": {
+        "id": { "type": "string" }, "name": { "type": "string" }, "media": { "$ref": "#/$defs/media" },
+        "speedMbps": { "type": "number", "minimum": 0 }, "enabled": { "type": "boolean" },
+        "vlanMode": { "enum": ["access", "trunk", "unmanaged"] }, "accessVlan": { "type": "string" },
+        "allowedVlans": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }, "nativeVlan": { "type": "string" },
+        "poe": { "$ref": "#/$defs/poeClass" }, "notes": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "infrastructure": {
+      "type": "object",
+      "required": ["id", "name", "kind", "ip", "subnetIds", "notes"],
+      "properties": {
+        "id": { "type": "string" }, "name": { "type": "string" },
+        "kind": { "enum": ["router", "switch", "firewall", "bbmd", "gateway", "sc-hub", "sc-hub-cluster", "media-converter", "mstp-repeater", "arcnet-repeater", "wireless-ap"] },
+        "ip": { "type": "string" }, "subnetIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }, "notes": { "type": "string" },
+        "uri": { "type": "string" }, "failoverIp": { "type": "string" }, "failoverUri": { "type": "string" },
+        "peerInfrastructureIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "underlaySubnetIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "ports": { "type": "array", "items": { "$ref": "#/$defs/physicalPort" } }, "locationId": { "type": "string" },
+        "model": { "type": "string" }, "poeBudgetWatts": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "testPath": {
+      "type": "object",
+      "required": ["id", "name", "testType", "protocol", "broadcastAddress", "outcome", "hops", "notes"],
+      "properties": {
+        "id": { "type": "string" }, "name": { "type": "string" }, "testType": { "enum": ["ping", "bacnet-whois", "custom"] },
+        "protocol": { "type": "string" }, "broadcastAddress": { "type": "string" }, "udpPort": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "outcome": { "enum": ["success", "failure"] }, "hops": { "type": "array", "items": { "type": "string" } }, "notes": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "location": {
+      "type": "object", "required": ["id", "name", "kind", "notes"],
+      "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "kind": { "enum": ["campus", "building", "floor", "room", "closet", "rack", "panel"] }, "parentId": { "type": "string" }, "notes": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "endpoint": {
+      "oneOf": [
+        { "type": "object", "required": ["kind", "deviceId", "nicId"], "properties": { "kind": { "const": "device-nic" }, "deviceId": { "type": "string" }, "nicId": { "type": "string" } }, "additionalProperties": false },
+        { "type": "object", "required": ["kind", "infrastructureId", "portId"], "properties": { "kind": { "const": "infrastructure-port" }, "infrastructureId": { "type": "string" }, "portId": { "type": "string" } }, "additionalProperties": false },
+        { "type": "object", "required": ["kind", "panelId", "portId"], "properties": { "kind": { "const": "patch-panel-port" }, "panelId": { "type": "string" }, "portId": { "type": "string" } }, "additionalProperties": false }
+      ]
+    },
+    "link": {
+      "type": "object", "required": ["id", "label", "media", "status", "a", "b", "notes"],
+      "properties": { "id": { "type": "string" }, "label": { "type": "string" }, "media": { "$ref": "#/$defs/media" }, "lengthMeters": { "type": "number", "minimum": 0 }, "status": { "enum": ["planned", "installed", "verified", "faulted"] }, "a": { "$ref": "#/$defs/endpoint" }, "b": { "$ref": "#/$defs/endpoint" }, "notes": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "segmentMember": {
+      "type": "object", "required": ["ref", "terminated", "biasSource"],
+      "properties": {
+        "ref": { "oneOf": [
+          { "type": "object", "required": ["kind", "deviceId"], "properties": { "kind": { "const": "device" }, "deviceId": { "type": "string" } }, "additionalProperties": false },
+          { "type": "object", "required": ["kind", "infrastructureId"], "properties": { "kind": { "const": "infrastructure" }, "infrastructureId": { "type": "string" } }, "additionalProperties": false }
+        ] },
+        "terminated": { "type": "boolean" }, "biasSource": { "type": "boolean" }, "unitLoad": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "mstpSegment": {
+      "type": "object", "required": ["id", "subnetId", "name", "cable", "members", "notes"],
+      "properties": { "id": { "type": "string" }, "subnetId": { "type": "string" }, "name": { "type": "string" }, "cable": { "enum": ["stp-18awg", "stp-22awg", "stp-24awg", "other"] }, "lengthMeters": { "type": "number", "minimum": 0 }, "members": { "type": "array", "items": { "$ref": "#/$defs/segmentMember" } }, "notes": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "arcnetSegment": {
+      "type": "object", "required": ["id", "subnetId", "name", "cable", "members", "notes"],
+      "properties": { "id": { "type": "string" }, "subnetId": { "type": "string" }, "name": { "type": "string" }, "cable": { "enum": ["stp-22awg", "stp-24awg", "other"] }, "lengthMeters": { "type": "number", "minimum": 0 }, "members": { "type": "array", "items": { "$ref": "#/$defs/segmentMember" } }, "notes": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "physicalLayer": {
+      "type": "object", "required": ["enabled", "locations", "patchPanels", "links", "mstpSegments", "arcnetSegments"],
+      "properties": {
+        "enabled": { "type": "boolean" }, "locations": { "type": "array", "items": { "$ref": "#/$defs/location" } },
+        "patchPanels": { "type": "array", "items": { "type": "object", "required": ["id", "name", "ports", "notes"], "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "locationId": { "type": "string" }, "ports": { "type": "array", "items": { "$ref": "#/$defs/physicalPort" } }, "notes": { "type": "string" } }, "additionalProperties": false } },
+        "links": { "type": "array", "items": { "$ref": "#/$defs/link" } }, "mstpSegments": { "type": "array", "items": { "$ref": "#/$defs/mstpSegment" } },
+        "arcnetSegments": { "type": "array", "items": { "$ref": "#/$defs/arcnetSegment" } }
+      },
+      "additionalProperties": false
+    }
+  }
+}

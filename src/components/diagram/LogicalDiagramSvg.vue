@@ -123,21 +123,70 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import type { DiagramDevice, DiagramProject, DiagramSubnet } from '../../lib/network-diagram';
+import type { ConfigTargetKind, DiagramDevice, DiagramInfrastructure, DiagramProject, DiagramSubnet } from '../../lib/network-diagram';
 
-interface LogicalDiagramModel extends Record<string, any> {
+interface HostNode { device: DiagramDevice; ownerSubnet: DiagramSubnet }
+interface BasicLink { id: string; label: string; path: string; startX: number; startY: number; endX: number; endY: number }
+interface RelationshipLink extends BasicLink { labelX: number; labelY: number; mutual?: boolean }
+interface PathLegend { id: string; outcome: string; name: string; protocol: string; rows: { label: string; value: string }[]; x: number; y: number }
+
+export interface LogicalDiagramModel {
   project: DiagramProject;
-  hostNodes: { device: DiagramDevice; ownerSubnet: DiagramSubnet }[];
+  canvasWidth: number;
+  canvasHeight: number;
+  subnetY: number;
+  ipHostNodes: HostNode[];
+  ipHostY: number;
+  fieldSegments: DiagramSubnet[];
+  fieldBusY: number;
+  fieldHostNodes: HostNode[];
+  fieldHostY: number;
+  showPhysicalOverlay: boolean;
+  physicalOverlayLinks: { id: string; label: string; points: string }[];
+  diagnosticTargetKeys: string[];
+  addressLinks: (BasicLink & { color: string })[];
+  scLinks: BasicLink[];
+  displayedBdtLinks: RelationshipLink[];
+  displayedFdrLinks: RelationshipLink[];
+  hostNodes: HostNode[];
+  hostHeight: number;
+  pathSegments: { id: string; label: string; path: string; outcome: string }[];
+  pathLegends: PathLegend[];
+  legendStart: number;
+  legendCardWidth: number;
+  legendTextLimit: number;
+  subnetWidth: number;
+  subnetHeight: number;
+  hostWidth: number;
+  clipped: (value: string, length: number) => string;
+  validConnections: (item: DiagramInfrastructure) => string[];
+  infrastructureConnectionLabel: (item: DiagramInfrastructure, subnetId: string) => string;
+  connectionPath: (index: number, itemId: string, subnetId: string) => string;
+  connectionKindClass: (item: DiagramInfrastructure) => string;
+  connectionTargetX: (itemId: string, subnetId: string) => number;
+  connectionTargetY: (subnetId: string) => number;
+  infrastructureX: (index: number) => number;
+  infrastructureY: (index: number) => number;
+  focusConfig: (kind: ConfigTargetKind, id: string) => void;
+  fieldBusRoutePath: (segment: DiagramSubnet) => string;
+  networkCenter: (id: string) => number;
+  networkY: (subnet: DiagramSubnet) => number;
+  routerName: (id: string) => string;
+  networkX: (subnet: DiagramSubnet) => number;
+  roundedTopAccentPath: (width: number) => string;
+  networkDiagramLabel: (subnet: DiagramSubnet) => string;
+  subnetCidr: (subnet: DiagramSubnet) => string;
+  subnetMetaLabel: (subnet: DiagramSubnet) => string;
+  hostRelationshipClass: (device: DiagramDevice) => string;
+  hostX: (host: HostNode, fallbackIndex?: number) => number;
+  hostYFor: (host: HostNode) => number;
+  activateHostNode: (device: DiagramDevice) => void;
+  deviceTooltip: (device: DiagramDevice) => string;
+  deviceServiceLabel: (device: DiagramDevice) => string;
   hostAddressRows: (device: DiagramDevice) => { id: string; color: string; label: string; address: string }[];
-  pathLegends: {
-    id: string;
-    outcome: string;
-    name: string;
-    protocol: string;
-    rows: { label: string; value: string }[];
-    x: number;
-    y: number;
-  }[];
+  addressCount: (device: DiagramDevice) => number;
+  hostRelationshipBadge: (device: DiagramDevice) => string;
+  legendCardHeight: (legend: { rows: unknown[] }) => number;
 }
 
 const props = defineProps<{ model: LogicalDiagramModel }>();

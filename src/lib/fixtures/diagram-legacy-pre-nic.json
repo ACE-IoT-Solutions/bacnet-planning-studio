@@ -1,1 +1,108 @@
-{"version":1,"title":"Legacy pre-NIC","notes":"","subnets":[{"id":"legacy-subnet","name":"Controls LAN","address":"192.168.10.0","cidr":24,"vlan":"10","color":"#c1d200","devices":[{"id":"legacy-device","name":"Controller","kind":"controller","notes":"","ip":"192.168.10.20","additionalInterfaces":[]}]}],"infrastructure":[],"paths":[]}
+{
+  "version": 1,
+  "title": "Legacy Pre-NIC Campus",
+  "notes": "Captured before NIC entities were introduced.",
+  "subnets": [
+    {
+      "id": "legacy-ip",
+      "name": "Legacy Controls",
+      "address": "10.90.0.0",
+      "cidr": 24,
+      "vlan": "90",
+      "color": "#c1d200",
+      "networkType": "bacnet-ip",
+      "udpPort": 47808,
+      "devices": [
+        {
+          "id": "legacy-router",
+          "name": "Legacy BACnet Router",
+          "kind": "controller",
+          "notes": "Device-level addressing",
+          "ip": "10.90.0.20",
+          "additionalInterfaces": [
+            {
+              "id": "legacy-secondary",
+              "subnetId": "legacy-ip",
+              "ip": "10.90.0.21",
+              "label": "Secondary NIC"
+            }
+          ],
+          "requiredForRouting": true,
+          "bbmdEnabled": false,
+          "bdtPeerDeviceIds": [],
+          "foreignDeviceBbmdId": "",
+          "bacnetIpEnabled": true,
+          "bacnetScEnabled": false
+        }
+      ]
+    },
+    {
+      "id": "legacy-sc",
+      "name": "Legacy BACnet/SC",
+      "address": "",
+      "cidr": 24,
+      "vlan": "",
+      "color": "#94d8ff",
+      "networkType": "bacnet-sc",
+      "bacnetNetworkNumber": "4001",
+      "devices": [
+        {
+          "id": "legacy-sc-node",
+          "name": "SC Operator",
+          "kind": "workstation",
+          "notes": "",
+          "ip": "10.90.0.50",
+          "additionalInterfaces": [],
+          "bacnetIpEnabled": false,
+          "bacnetScEnabled": true,
+          "scHubId": "legacy-sc-hub",
+          "scHubL3Reachable": true
+        }
+      ]
+    }
+  ],
+  "infrastructure": [
+    {
+      "id": "legacy-bbmd",
+      "name": "Legacy BBMD",
+      "kind": "bbmd",
+      "ip": "10.90.0.10",
+      "subnetIds": [
+        "legacy-ip"
+      ],
+      "notes": "Old infrastructure BBMD"
+    },
+    {
+      "id": "legacy-sc-hub",
+      "name": "Legacy SC Hub",
+      "kind": "sc-hub",
+      "ip": "10.90.0.5",
+      "subnetIds": [
+        "legacy-sc"
+      ],
+      "underlaySubnetIds": [
+        "legacy-ip"
+      ],
+      "notes": "",
+      "uri": "wss://10.90.0.5:443"
+    }
+  ],
+  "paths": [
+    {
+      "id": "legacy-path",
+      "name": "Legacy host-id path",
+      "testType": "ping",
+      "protocol": "ICMP",
+      "broadcastAddress": "",
+      "udpPort": 47808,
+      "outcome": "success",
+      "hops": [
+        "legacy-router",
+        "legacy-sc-node"
+      ],
+      "notes": ""
+    }
+  ],
+  "viewMode": "detailed",
+  "allowSplitHorizonBdt": false
+}

@@ -9,10 +9,10 @@
         <summary>Locations <em>{{ project.physical.locations.length }}</em></summary>
         <div class="physical-card-body">
           <button class="icon-text-button small" type="button" @click="addLocation">+ Location</button>
-          <div v-for="location in project.physical.locations" :id="`config-location-${location.id}`" :key="location.id" class="physical-row config-target" draggable="true" @dragstart="draggingLocationId = location.id" @dragover.prevent @drop="reparentLocation(location.id)">
-            <input v-model="location.name" aria-label="Location name" placeholder="IDF 1">
-            <select v-model="location.kind" aria-label="Location type"><option v-for="kind in locationKinds" :key="kind" :value="kind">{{ kind }}</option></select>
-            <select v-model="location.parentId" aria-label="Parent location"><option :value="undefined">No parent</option><option v-for="candidate in project.physical.locations.filter(item => item.id !== location.id)" :key="candidate.id" :value="candidate.id">{{ candidate.name }}</option></select>
+          <div v-for="location in project.physical.locations" :id="`config-location-${location.id}`" :key="location.id" class="physical-row physical-location-row config-target" draggable="true" @dragstart="draggingLocationId = location.id" @dragover.prevent @drop="reparentLocation(location.id)">
+            <AceField class="physical-location-name" label="Name"><AceTextInput v-model="location.name" placeholder="IDF 1" /></AceField>
+            <AceField label="Type"><select v-model="location.kind"><option v-for="kind in locationKinds" :key="kind" :value="kind">{{ kind }}</option></select></AceField>
+            <AceField label="Parent"><select v-model="location.parentId"><option :value="undefined">No parent</option><option v-for="candidate in project.physical.locations.filter(item => item.id !== location.id)" :key="candidate.id" :value="candidate.id">{{ candidate.name }}</option></select></AceField>
             <button class="row-remove-button" type="button" @click="removeLocation(location.id)">×</button>
           </div>
         </div>
@@ -21,15 +21,15 @@
       <details class="glass-card physical-editor-card" open>
         <summary>Equipment placement &amp; ports</summary>
         <div class="physical-card-body">
-          <input v-model="endpointSearch" type="search" placeholder="Search ports and endpoints" aria-label="Search physical endpoints">
+          <AceField label="Find an endpoint"><AceTextInput v-model="endpointSearch" type="search" placeholder="Search ports and endpoints" /></AceField>
           <article v-for="item in project.infrastructure" :key="item.id" class="physical-equipment-block">
             <strong>{{ item.name }}</strong>
             <div class="editor-grid two-columns">
               <div class="form-group"><label>Location</label><select v-model="item.locationId"><option value="">Unassigned</option><option v-for="location in project.physical.locations" :key="location.id" :value="location.id">{{ locationPath(location.id) }}</option></select></div>
-              <div class="form-group"><label>Model</label><input v-model="item.model" placeholder="Manufacturer / model"></div>
+              <div class="form-group"><label>Model</label><input v-model="item.model" type="text" placeholder="Manufacturer / model"></div>
               <div class="form-group"><label>PoE budget (W)</label><input v-model.number="item.poeBudgetWatts" type="number" min="0"></div>
             </div>
-            <div class="physical-port-toolbar"><span>{{ item.ports?.length ?? 0 }} ports</span><label>Set all VLAN modes <select aria-label="Set all port VLAN modes" @change="setAllPortsVlanMode(item, ($event.target as HTMLSelectElement).value)"><option value="">Choose…</option><option value="unmanaged">Unmanaged</option><option value="access">Access</option><option value="trunk">Trunk</option></select></label><button type="button" @click="generatePorts(item)">Generate ports</button></div>
+            <div class="physical-port-toolbar"><span>{{ item.ports?.length ?? 0 }} ports</span><label>Set all VLAN modes <select aria-label="Set all port VLAN modes" @change="setAllPortsVlanMode(item, ($event.target as HTMLSelectElement).value)"><option value="">Choose…</option><option value="unmanaged">Unmanaged</option><option value="access">Access</option><option value="trunk">Trunk</option></select></label><button type="button" @click="openPortGenerator(item)">Generate ports</button></div>
             <div v-for="port in item.ports" :id="`config-port-${port.id}`" :key="port.id" class="physical-port-row config-target">
               <input v-model="port.name" aria-label="Port name">
               <select v-model="port.media" aria-label="Port media"><option v-for="media in mediaTypes" :key="media" :value="media">{{ media }}</option></select>
@@ -47,12 +47,12 @@
               <div class="form-group"><label>PoE requirement</label><select v-model="entry.device.poeClass"><option v-for="poe in poeClasses" :key="poe" :value="poe">{{ poe }}</option></select></div>
             </div>
             <div v-for="nic in entry.device.nics" :key="nic.id" class="physical-nic-row">
-              <span>{{ nic.name }}</span>
-              <select v-model="nic.physical!.media" aria-label="NIC media"><option v-for="media in mediaTypes" :key="media" :value="media">{{ media }}</option></select>
-              <input v-model.number="nic.physical!.speedMbps" type="number" min="0" step="0.001" aria-label="NIC speed Mbps" placeholder="Mbps">
-              <select :value="connectedEndpoint(entry.device.id, nic.id)" aria-label="Connected to" @change="connectNic(entry.device.id, nic.id, ($event.target as HTMLSelectElement).value)">
+              <div class="physical-nic-name"><small>Interface</small><span>{{ nic.name }}</span></div>
+              <AceField label="Media"><select v-model="nic.physical!.media"><option v-for="media in mediaTypes" :key="media" :value="media">{{ media }}</option></select></AceField>
+              <AceField label="Speed (Mbps)"><input v-model.number="nic.physical!.speedMbps" type="number" min="0" step="0.001" placeholder="Mbps"></AceField>
+              <AceField label="Connection"><select :value="connectedEndpoint(entry.device.id, nic.id)" @change="connectNic(entry.device.id, nic.id, ($event.target as HTMLSelectElement).value)">
                 <option value="">Not connected</option><option v-for="endpoint in availableEndpoints(entry.device.id, nic.id)" :key="endpoint.key" :value="endpoint.key">{{ endpoint.label }}</option>
-              </select>
+              </select></AceField>
             </div>
           </article>
         </div>
@@ -63,7 +63,7 @@
         <div class="physical-card-body">
           <button class="icon-text-button small" type="button" @click="addPanel">+ Patch panel</button>
           <article v-for="panel in project.physical.patchPanels" :id="`config-panel-${panel.id}`" :key="panel.id" class="physical-equipment-block config-target">
-            <div class="physical-row"><input v-model="panel.name"><select v-model="panel.locationId"><option value="">Unassigned</option><option v-for="location in project.physical.locations" :key="location.id" :value="location.id">{{ locationPath(location.id) }}</option></select><button type="button" @click="generatePanelPorts(panel)">Generate pairs</button><button class="row-remove-button" type="button" @click="removePanel(panel.id)">×</button></div>
+            <div class="physical-row"><input v-model="panel.name" type="text"><select v-model="panel.locationId"><option value="">Unassigned</option><option v-for="location in project.physical.locations" :key="location.id" :value="location.id">{{ locationPath(location.id) }}</option></select><button type="button" @click="openPanelGenerator(panel)">Generate pairs</button><button class="row-remove-button" type="button" @click="removePanel(panel.id)">×</button></div>
             <small>{{ panel.ports.length / 2 }} front / rear pass-through pairs</small>
           </article>
         </div>
@@ -74,7 +74,7 @@
         <div class="physical-card-body">
           <button class="icon-text-button small" type="button" :disabled="endpointOptions.length < 2" @click="addCable">+ Cable</button>
           <article v-for="link in project.physical.links" :id="`config-link-${link.id}`" :key="link.id" class="physical-link-row config-target">
-            <input v-model="link.label" placeholder="Cable label">
+            <input v-model="link.label" type="text" placeholder="Cable label">
             <select :value="endpointKey(link.a)" @change="link.a = endpointRef(($event.target as HTMLSelectElement).value)!"><option v-for="endpoint in filteredEndpointOptions" :key="endpoint.key" :value="endpoint.key">{{ endpoint.label }}</option></select>
             <span>→</span>
             <select :value="endpointKey(link.b)" @change="link.b = endpointRef(($event.target as HTMLSelectElement).value)!"><option v-for="endpoint in filteredEndpointOptions" :key="endpoint.key" :value="endpoint.key">{{ endpoint.label }}</option></select>
@@ -92,7 +92,7 @@
           <article v-for="subnet in serialSubnets" :key="subnet.id" class="physical-equipment-block">
             <div class="physical-port-toolbar"><strong>{{ subnet.name }} · {{ subnet.networkType === 'arcnet' ? 'ARC156' : 'MS/TP' }}</strong><button type="button" @click="addSerialSegment(subnet)">+ Segment</button></div>
             <article v-for="segment in segmentsFor(subnet)" :id="`config-segment-${segment.id}`" :key="segment.id" class="serial-editor config-target">
-              <div class="physical-row"><input v-model="segment.name"><select v-model="segment.cable"><option value="stp-18awg">18 AWG STP</option><option value="stp-22awg">22 AWG STP</option><option value="stp-24awg">24 AWG STP</option><option value="other">Other</option></select><input v-model.number="segment.lengthMeters" type="number" min="0" placeholder="Length m"><button type="button" @click="autoChain(subnet, segment)">Auto-chain</button><button class="row-remove-button" type="button" @click="removeSegment(subnet, segment.id)">×</button></div>
+              <div class="physical-row"><input v-model="segment.name" type="text"><select v-model="segment.cable"><option value="stp-18awg">18 AWG STP</option><option value="stp-22awg">22 AWG STP</option><option value="stp-24awg">24 AWG STP</option><option value="other">Other</option></select><input v-model.number="segment.lengthMeters" type="number" min="0" placeholder="Length m"><button type="button" @click="autoChain(subnet, segment)">Auto-chain</button><button class="row-remove-button" type="button" @click="removeSegment(subnet, segment.id)">×</button></div>
               <div class="serial-budget">{{ segment.members.reduce((sum, member) => sum + (member.unitLoad ?? 1), 0) }} nodes · {{ segment.lengthMeters ?? 0 }} m</div>
               <div v-for="(member, index) in segment.members" :key="memberKey(member)" class="serial-member-row"><button type="button" :disabled="index === 0" @click="moveMember(segment, index, -1)">↑</button><button type="button" :disabled="index === segment.members.length - 1" @click="moveMember(segment, index, 1)">↓</button><span>{{ memberLabel(member) }}</span><label><input v-model="member.terminated" type="checkbox"> Terminated</label><label v-if="subnet.networkType === 'mstp'"><input v-model="member.biasSource" type="checkbox"> Bias</label></div>
             </article>
@@ -100,12 +100,16 @@
         </div>
       </details>
     </template>
+    <PortGeneratorDialog ref="portGeneratorDialog" @generate="replaceGeneratedPorts" />
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import AceToggle from '../AceToggle.vue';
+import AceField from '../AceField.vue';
+import AceTextInput from '../AceTextInput.vue';
+import PortGeneratorDialog, { type PortGenerationResult } from './dialogs/PortGeneratorDialog.vue';
 import type { DiagramDevice, DiagramInfrastructure, DiagramProject, DiagramSubnet } from '../../lib/network-diagram';
 import { pruneDanglingReferences } from '../../lib/network-diagram-prune';
 import { createArcnetSegment, createLink, createLocation, createMstpSegment, createPatchPanel, createPortRange, endpointKey, resolveEndpoint, type ArcnetSegment, type LocationKind, type MstpSegment, type MstpSegmentMember, type PatchPanel, type PhysicalEndpointRef, type PhysicalMedia, type PoeClass } from '../../lib/physical';
@@ -117,6 +121,7 @@ const mediaTypes: PhysicalMedia[] = ['copper-utp', 'copper-stp', 'fiber-mm', 'fi
 const poeClasses: PoeClass[] = ['none', 'af', 'at', 'bt-type3', 'bt-type4'];
 const draggingLocationId = ref('');
 const endpointSearch = ref('');
+const portGeneratorDialog = ref<InstanceType<typeof PortGeneratorDialog> | null>(null);
 const devices = computed(() => props.project.subnets.flatMap(subnet => subnet.devices.map(device => ({ subnet, device }))));
 const serialSubnets = computed(() => props.project.subnets.filter(subnet => subnet.networkType === 'mstp' || subnet.networkType === 'arcnet'));
 const endpointOptions = computed(() => [
@@ -141,12 +146,23 @@ function reparentLocation(parentId: string) {
   draggingLocationId.value = '';
 }
 function locationPath(id: string) { const parts: string[] = []; const seen = new Set<string>(); let item = props.project.physical.locations.find(candidate => candidate.id === id); while (item && !seen.has(item.id)) { seen.add(item.id); parts.unshift(item.name); item = props.project.physical.locations.find(candidate => candidate.id === item!.parentId); } return parts.join(' / '); }
-function generatePorts(item: DiagramInfrastructure) { const count = Number(window.prompt('How many ports?', '24')); if (!Number.isInteger(count) || count < 1) return; item.ports = createPortRange('Gi1/0/', 1, count); }
+function connectedPortCount(portIds: string[]) { const ids = new Set(portIds); return props.project.physical.links.filter(link => [link.a, link.b].some(endpoint => endpoint.kind !== 'device-nic' && ids.has(endpoint.portId))).length; }
+function openPortGenerator(item: DiagramInfrastructure) { portGeneratorDialog.value?.open({ kind: 'infrastructure', id: item.id, name: item.name, connectedCount: connectedPortCount((item.ports ?? []).map(port => port.id)) }); }
 function setAllPortsVlanMode(item: DiagramInfrastructure, mode: string) { if (mode === 'access' || mode === 'trunk' || mode === 'unmanaged') for (const port of item.ports ?? []) port.vlanMode = mode; }
 function removePort(item: DiagramInfrastructure, id: string) { item.ports = (item.ports ?? []).filter(port => port.id !== id); pruneDanglingReferences(props.project); }
 function addPanel() { props.project.physical.patchPanels.push(createPatchPanel()); }
 function removePanel(id: string) { props.project.physical.patchPanels = props.project.physical.patchPanels.filter(item => item.id !== id); pruneDanglingReferences(props.project); }
-function generatePanelPorts(panel: PatchPanel) { const count = Number(window.prompt('How many front/rear pairs?', '24')); if (!Number.isInteger(count) || count < 1) return; panel.ports = Array.from({ length: count }, (_, index) => createPortRange(`${index + 1}-`, 1, 2)).flat(); }
+function openPanelGenerator(panel: PatchPanel) { portGeneratorDialog.value?.open({ kind: 'panel', id: panel.id, name: panel.name, connectedCount: connectedPortCount(panel.ports.map(port => port.id)) }); }
+function replaceGeneratedPorts(result: PortGenerationResult) {
+  if (result.kind === 'infrastructure') {
+    const item = props.project.infrastructure.find(candidate => candidate.id === result.id); if (!item) return;
+    item.ports = createPortRange(result.prefix, result.start, result.count, { media: result.media, speedMbps: result.speedMbps, poe: result.poe });
+  } else {
+    const panel = props.project.physical.patchPanels.find(candidate => candidate.id === result.id); if (!panel) return;
+    panel.ports = Array.from({ length: result.count }, (_, index) => createPortRange(`${result.prefix}${result.start + index}-`, 1, 2, { media: result.media, speedMbps: result.speedMbps })).flat();
+  }
+  pruneDanglingReferences(props.project);
+}
 function availableEndpoints(deviceId: string, nicId: string) {
   const current = connectedEndpoint(deviceId, nicId);
   const used = new Set(props.project.physical.links.flatMap(link => [endpointKey(link.a), endpointKey(link.b)]));

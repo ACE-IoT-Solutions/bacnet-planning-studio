@@ -1,1 +1,105 @@
-{"version":1,"title":"Nmap Inventory","notes":"Frozen host-discovery import","subnets":[],"infrastructure":[],"paths":[],"viewMode":"detailed"}
+{
+  "version": 1,
+  "title": "Imported Nmap Inventory",
+  "notes": "Captured from authorized host discovery output.",
+  "subnets": [
+    {
+      "id": "nmap-subnet",
+      "name": "Discovered Controls LAN",
+      "address": "192.168.80.0",
+      "cidr": 24,
+      "vlan": "80",
+      "color": "#c1d200",
+      "devices": [
+        {
+          "id": "nmap-controller",
+          "name": "ahu-controller",
+          "kind": "controller",
+          "notes": "",
+          "nics": [
+            {
+              "id": "nic-loyw3v28-yrg777",
+              "name": "NIC 1",
+              "addresses": [
+                {
+                  "id": "address-loyw3v28-074eee",
+                  "subnetId": "nmap-subnet",
+                  "ip": "192.168.80.20",
+                  "label": "Primary"
+                }
+              ],
+              "bacnetIpEnabled": true,
+              "bacnetScEnabled": false,
+              "scHubRole": "node",
+              "scHubUri": "",
+              "scFailoverHubUri": "",
+              "scHubId": "",
+              "scHubL3Reachable": false
+            }
+          ],
+          "bbmdEnabled": false,
+          "bdtPeerDeviceIds": [],
+          "foreignDeviceBbmdId": ""
+        },
+        {
+          "id": "nmap-workstation",
+          "name": "operator-pc",
+          "kind": "workstation",
+          "notes": "",
+          "nics": [
+            {
+              "id": "nic-loyw3v28-32gsss",
+              "name": "NIC 1",
+              "addresses": [
+                {
+                  "id": "address-loyw3v28-4i5",
+                  "subnetId": "nmap-subnet",
+                  "ip": "192.168.80.50",
+                  "label": "Primary"
+                }
+              ],
+              "bacnetIpEnabled": true,
+              "bacnetScEnabled": false,
+              "scHubRole": "node",
+              "scHubUri": "",
+              "scFailoverHubUri": "",
+              "scHubId": "",
+              "scHubL3Reachable": false
+            }
+          ],
+          "bbmdEnabled": false,
+          "bdtPeerDeviceIds": [],
+          "foreignDeviceBbmdId": ""
+        }
+      ],
+      "networkType": "bacnet-ip",
+      "udpPort": 47808,
+      "bacnetNetworkNumber": "",
+      "mstpBaudRate": 38400,
+      "mstpMaxMaster": 127,
+      "arcnetDataRate": 2500,
+      "upstreamSubnetId": "",
+      "routerId": ""
+    }
+  ],
+  "infrastructure": [
+    {
+      "id": "nmap-gateway",
+      "name": "Discovered gateway",
+      "kind": "gateway",
+      "ip": "192.168.80.1",
+      "subnetIds": [
+        "nmap-subnet"
+      ],
+      "notes": "",
+      "uri": "",
+      "failoverIp": "",
+      "failoverUri": "",
+      "peerInfrastructureIds": [],
+      "underlaySubnetIds": []
+    }
+  ],
+  "paths": [],
+  "viewMode": "detailed",
+  "allowSplitHorizonBdt": false
+}

@@ -29,6 +29,13 @@ function serialMemberExistsOnSubnet(project: DiagramProject, member: MstpSegment
   return device?.nics.some(nic => nic.addresses.some(address => address.subnetId === subnetId)) ?? false;
 }
 
+function isRoutingMember(project: DiagramProject, member: MstpSegmentMember): boolean {
+  if (member.ref.kind === 'infrastructure') return true;
+  const deviceId = member.ref.deviceId;
+  const device = project.subnets.flatMap(subnet => subnet.devices).find(item => item.id === deviceId);
+  return Boolean(device?.requiredForRouting || project.subnets.some(subnet => subnet.routerId === deviceId));
+}
+
 function serialTopologyDiagnostics(
   project: DiagramProject,
   protocol: 'MSTP' | 'ARCNET',
@@ -53,7 +60,7 @@ function serialTopologyDiagnostics(
       targets: [target('segment', segment.id), target(member.ref.kind === 'device' ? 'device' : 'infrastructure', member.ref.kind === 'device' ? member.ref.deviceId : member.ref.infrastructureId)]
     });
   }
-  const internalRouters = segment.members.slice(1, -1).filter(member => member.ref.kind === 'infrastructure').length;
+  const internalRouters = segment.members.slice(1, -1).filter(member => isRoutingMember(project, member)).length;
   if (internalRouters > 0) diagnostics.push({ level: 'warning', code: `${protocol}-ORDER`, message: `${name} has a router or repeater mid-chain; verify segment boundaries.`, targets: [target('segment', segment.id)] });
   return diagnostics;
 }

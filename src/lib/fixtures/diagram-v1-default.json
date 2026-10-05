@@ -1,1 +1,89 @@
-{"version":1,"title":"BACnet Network Condition","notes":"","subnets":[],"infrastructure":[],"paths":[],"viewMode":"detailed","allowSplitHorizonBdt":false}
+{
+  "version": 1,
+  "title": "BACnet Network Condition",
+  "notes": "",
+  "subnets": [
+    {
+      "id": "subnet-loyw3v28-91jlll",
+      "name": "Controls LAN",
+      "address": "192.168.0.0",
+      "cidr": 24,
+      "vlan": "10",
+      "color": "#c1d200",
+      "devices": [
+        {
+          "id": "device-loyw3v28-ah7sss",
+          "name": "BACnet Controller",
+          "kind": "controller",
+          "notes": "",
+          "nics": [
+            {
+              "id": "nic-loyw3v28-bww",
+              "name": "NIC 1",
+              "addresses": [
+                {
+                  "id": "address-loyw3v28-dck777",
+                  "subnetId": "subnet-loyw3v28-91jlll",
+                  "ip": "192.168.0.20",
+                  "label": "Primary"
+                }
+              ],
+              "bacnetIpEnabled": true,
+              "bacnetScEnabled": false,
+              "scHubRole": "node",
+              "scHubUri": "",
+              "scFailoverHubUri": "",
+              "scHubId": "",
+              "scHubL3Reachable": false
+            }
+          ],
+          "bbmdEnabled": false,
+          "bdtPeerDeviceIds": [],
+          "foreignDeviceBbmdId": ""
+        },
+        {
+          "id": "device-loyw3v28-es8eee",
+          "name": "Operator Workstation",
+          "kind": "workstation",
+          "notes": "",
+          "nics": [
+            {
+              "id": "nic-loyw3v28-g7wlll",
+              "name": "NIC 1",
+              "addresses": [
+                {
+                  "id": "address-loyw3v28-hnksss",
+                  "subnetId": "subnet-loyw3v28-91jlll",
+                  "ip": "192.168.0.50",
+                  "label": "Primary"
+                }
+              ],
+              "bacnetIpEnabled": true,
+              "bacnetScEnabled": false,
+              "scHubRole": "node",
+              "scHubUri": "",
+              "scFailoverHubUri": "",
+              "scHubId": "",
+              "scHubL3Reachable": false
+            }
+          ],
+          "bbmdEnabled": false,
+          "bdtPeerDeviceIds": [],
+          "foreignDeviceBbmdId": ""
+        }
+      ],
+      "networkType": "bacnet-ip",
+      "udpPort": 47808,
+      "bacnetNetworkNumber": "",
+      "mstpBaudRate": 38400,
+      "mstpMaxMaster": 127,
+      "arcnetDataRate": 2500,
+      "upstreamSubnetId": "",
+      "routerId": ""
+    }
+  ],
+  "infrastructure": [],
+  "paths": [],
+  "viewMode": "detailed",
+  "allowSplitHorizonBdt": false
+}

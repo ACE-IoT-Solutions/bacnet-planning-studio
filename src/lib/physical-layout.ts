@@ -1,5 +1,5 @@
 import type { ConfigTargetKind, DiagramProject } from './network-diagram';
-import { endpointKey, type PhysicalEndpointRef } from './physical';
+import { endpointKey, type MstpSegmentMember, type PhysicalEndpointRef } from './physical';
 
 export interface PhysicalLayoutNode {
   id: string;
@@ -18,10 +18,13 @@ export interface PhysicalLayoutLink {
   media: string;
   status: string;
   points: string;
+  routeLane: number;
 }
 
 export interface PhysicalLayoutLane { id: string; label: string; x: number; y: number; width: number; height: number }
-export interface PhysicalLayout { width: number; height: number; lanes: PhysicalLayoutLane[]; nodes: PhysicalLayoutNode[]; links: PhysicalLayoutLink[] }
+export interface PhysicalLayoutSerialMember { id: string; label: string; x: number; y: number; terminated: boolean; biasSource: boolean }
+export interface PhysicalLayoutSerialSegment { id: string; name: string; protocol: 'mstp' | 'arcnet'; y: number; members: PhysicalLayoutSerialMember[] }
+export interface PhysicalLayout { width: number; height: number; lanes: PhysicalLayoutLane[]; nodes: PhysicalLayoutNode[]; links: PhysicalLayoutLink[]; serialSegments: PhysicalLayoutSerialSegment[] }
 
 const LANE_GAP = 24;
 const LANE_WIDTH = 340;
@@ -37,6 +40,27 @@ function hierarchyLabel(project: DiagramProject, id?: string): string {
   let current = byId.get(id);
   while (current && !visited.has(current.id)) { visited.add(current.id); parts.unshift(current.name); current = current.parentId ? byId.get(current.parentId) : undefined; }
   return parts.join(' / ') || 'Unassigned';
+}
+
+function serialMemberLabel(project: DiagramProject, member: MstpSegmentMember): string {
+  if (member.ref.kind === 'infrastructure') {
+    const id = member.ref.infrastructureId;
+    return project.infrastructure.find(item => item.id === id)?.name ?? 'Missing infrastructure';
+  }
+  const id = member.ref.deviceId;
+  return project.subnets.flatMap(subnet => subnet.devices).find(item => item.id === id)?.name ?? 'Missing device';
+}
+
+function serialMemberId(member: MstpSegmentMember): string {
+  return member.ref.kind === 'infrastructure' ? `infrastructure-${member.ref.infrastructureId}` : `device-${member.ref.deviceId}`;
+}
+
+function assignRouteLane(occupied: [number, number][][], start: number, end: number): number {
+  const interval: [number, number] = [Math.min(start, end), Math.max(start, end)];
+  const lane = occupied.findIndex(entries => entries.every(([from, to]) => interval[1] < from || interval[0] > to));
+  const selected = lane === -1 ? occupied.length : lane;
+  (occupied[selected] ??= []).push(interval);
+  return selected;
 }
 
 export function layoutPhysicalDiagram(project: DiagramProject): PhysicalLayout {
@@ -62,12 +86,46 @@ export function layoutPhysicalDiagram(project: DiagramProject): PhysicalLayout {
       nodes.push({ ...entry, x, y, width: NODE_WIDTH, height: NODE_HEIGHT, ports: entry.portDefs.map((port, portIndex) => ({ ...port, x: x + spacing * (portIndex + 1), y: y + NODE_HEIGHT })) });
     });
   }
-  const endpointPoints = new Map(nodes.flatMap(node => node.ports.flatMap(port => port.endpoint ? [[endpointKey(port.endpoint), port] as const] : [])));
+  const endpointPoints = new Map(nodes.flatMap(node => node.ports.flatMap(port => port.endpoint ? [[endpointKey(port.endpoint), { ...port, node }] as const] : [])));
+  const routeLanes: [number, number][][] = [];
+  const laneByLocation = new Map(lanes.map(lane => [lane.id, lane]));
+  const routingBaseY = 82 + laneHeight + 18;
   const links = project.physical.links.flatMap(link => {
     const a = endpointPoints.get(endpointKey(link.a)); const b = endpointPoints.get(endpointKey(link.b));
     if (!a || !b) return [];
-    const middleY = Math.max(a.y, b.y) + 18 + (project.physical.links.indexOf(link) % 4) * 7;
-    return [{ id: link.id, label: link.label, media: link.media, status: link.status, points: `${a.x},${a.y} ${a.x},${middleY} ${b.x},${middleY} ${b.x},${b.y}` }];
+    const aLane = laneByLocation.get(a.node.locationId ?? '')!;
+    const bLane = laneByLocation.get(b.node.locationId ?? '')!;
+    const aGutter = aLane.x < bLane.x ? aLane.x + aLane.width - 12 : aLane.x + 12;
+    const bGutter = bLane.x < aLane.x ? bLane.x + bLane.width - 12 : bLane.x + 12;
+    const sameLane = aLane.id === bLane.id;
+    const startX = sameLane ? aLane.x + aLane.width - 12 : aGutter;
+    const endX = sameLane ? startX : bGutter;
+    const routeLane = assignRouteLane(routeLanes, startX, endX);
+    const routeY = routingBaseY + routeLane * 16;
+    const points = [
+      [a.x, a.y], [a.x, a.y + 10], [startX, a.y + 10], [startX, routeY],
+      [endX, routeY], [endX, b.y + 10], [b.x, b.y + 10], [b.x, b.y]
+    ].map(point => point.join(',')).join(' ');
+    return [{ id: link.id, label: link.label, media: link.media, status: link.status, points, routeLane }];
   });
-  return { width: Math.max(760, 48 + lanes.length * (LANE_WIDTH + LANE_GAP)), height: Math.max(520, laneHeight + 130), lanes, nodes, links };
+  const width = Math.max(760, 48 + lanes.length * (LANE_WIDTH + LANE_GAP));
+  const serialSource = [
+    ...project.physical.mstpSegments.map(segment => ({ ...segment, protocol: 'mstp' as const })),
+    ...project.physical.arcnetSegments.map(segment => ({ ...segment, protocol: 'arcnet' as const }))
+  ];
+  const serialStartY = routingBaseY + Math.max(1, routeLanes.length) * 16 + 42;
+  const serialSegments = serialSource.map((segment, segmentIndex) => {
+    const y = serialStartY + segmentIndex * 72;
+    const memberWidth = segment.members.length > 1 ? (width - 112) / (segment.members.length - 1) : 0;
+    return {
+      id: segment.id, name: segment.name, protocol: segment.protocol, y,
+      members: segment.members.map((member, index) => ({
+        id: serialMemberId(member), label: serialMemberLabel(project, member),
+        x: segment.members.length === 1 ? width / 2 : 56 + index * memberWidth, y,
+        terminated: member.terminated, biasSource: member.biasSource
+      }))
+    };
+  });
+  const height = Math.max(520, serialSegments.length ? serialStartY + serialSegments.length * 72 : routingBaseY + routeLanes.length * 16 + 50);
+  return { width, height, lanes, nodes, links, serialSegments };
 }

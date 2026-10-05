@@ -33,6 +33,7 @@ This is designed for control engineers, network integrators, and building automa
 - **Styling:** Custom responsive CSS3 with glassmorphism effects and modern typography
 - **Graphics:** Dynamic animated vector SVGs for all diagram elements
 - **Project schema:** Version 2 with automatic migration of diagram and planner v1 files; see `docs/schema/diagram-project-v2.md`
+- **Agent discovery:** The deployed app publishes `llms.txt`, `capabilities.json`, a browser-accessible agent guide, and JSON Schemas for diagram and planner project files under `schemas/`.
 - **Local Dev Server:** Vite (optional, zero-config)
 
 ## Getting Started

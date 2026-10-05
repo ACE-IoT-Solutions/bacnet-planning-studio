@@ -1,1 +1,289 @@
-{"version":1,"title":"Planned BACnet Network Topology","notes":"Imported from Network Planner","subnets":[],"infrastructure":[],"paths":[],"viewMode":"networks","allowSplitHorizonBdt":true}
+{
+  "version": 1,
+  "title": "Planned BACnet Network Topology",
+  "notes": "Imported from Network Planner",
+  "subnets": [
+    {
+      "id": "plan-controls-a",
+      "name": "Controls A",
+      "address": "10.40.10.0",
+      "cidr": 24,
+      "vlan": "10",
+      "color": "#c1d200",
+      "devices": [
+        {
+          "id": "device-loyw3v28-xfyzzz",
+          "name": "Controls A BBMD",
+          "kind": "controller",
+          "notes": "BBMD-capable BACnet device imported from Network Planner",
+          "nics": [
+            {
+              "id": "nic-loyw3v28-yvn777",
+              "name": "BACnet/IP interface",
+              "addresses": [
+                {
+                  "id": "address-loyw3v28-0bbeee",
+                  "subnetId": "plan-controls-a",
+                  "ip": "10.40.10.10",
+                  "label": "Primary"
+                }
+              ],
+              "bacnetIpEnabled": true,
+              "bacnetScEnabled": false,
+              "scHubRole": "node",
+              "scHubUri": "",
+              "scFailoverHubUri": "",
+              "scHubId": "",
+              "scHubL3Reachable": false
+            }
+          ],
+          "bbmdEnabled": true,
+          "bdtPeerDeviceIds": [
+            "device-loyw3v28-1qzlll"
+          ],
+          "foreignDeviceBbmdId": ""
+        },
+        {
+          "id": "device-loyw3v28-620777",
+          "name": "Field Router 1",
+          "kind": "controller",
+          "notes": "Required BACnet routing device imported from Network Planner",
+          "nics": [
+            {
+              "id": "nic-loyw3v28-7hoeee",
+              "name": "NIC 1",
+              "addresses": [
+                {
+                  "id": "address-loyw3v28-8xclll",
+                  "subnetId": "plan-controls-a",
+                  "ip": "10.40.10.20",
+                  "label": "Primary"
+                }
+              ],
+              "bacnetIpEnabled": true,
+              "bacnetScEnabled": false,
+              "scHubRole": "node",
+              "scHubUri": "",
+              "scFailoverHubUri": "",
+              "scHubId": "",
+              "scHubL3Reachable": false
+            }
+          ],
+          "bbmdEnabled": false,
+          "bdtPeerDeviceIds": [],
+          "foreignDeviceBbmdId": "",
+          "requiredForRouting": true
+        },
+        {
+          "id": "device-loyw3v28-ad0sss",
+          "name": "ALC Router",
+          "kind": "controller",
+          "notes": "Required BACnet routing device imported from Network Planner",
+          "nics": [
+            {
+              "id": "nic-loyw3v28-bsp",
+              "name": "NIC 1",
+              "addresses": [
+                {
+                  "id": "address-loyw3v28-d8d777",
+                  "subnetId": "plan-controls-a",
+                  "ip": "10.40.10.21",
+                  "label": "Primary"
+                }
+              ],
+              "bacnetIpEnabled": true,
+              "bacnetScEnabled": false,
+              "scHubRole": "node",
+              "scHubUri": "",
+              "scFailoverHubUri": "",
+              "scHubId": "",
+              "scHubL3Reachable": false
+            }
+          ],
+          "bbmdEnabled": false,
+          "bdtPeerDeviceIds": [],
+          "foreignDeviceBbmdId": "",
+          "requiredForRouting": true
+        }
+      ],
+      "networkType": "bacnet-ip",
+      "udpPort": 47808,
+      "bacnetNetworkNumber": "1001",
+      "mstpBaudRate": 38400,
+      "mstpMaxMaster": 127,
+      "arcnetDataRate": 2500,
+      "upstreamSubnetId": "",
+      "routerId": ""
+    },
+    {
+      "id": "plan-controls-b",
+      "name": "Controls B",
+      "address": "10.40.20.0",
+      "cidr": 24,
+      "vlan": "20",
+      "color": "#94d8ff",
+      "devices": [
+        {
+          "id": "device-loyw3v28-1qzlll",
+          "name": "Controls B BBMD",
+          "kind": "controller",
+          "notes": "BBMD-capable BACnet device imported from Network Planner",
+          "nics": [
+            {
+              "id": "nic-loyw3v28-36nsss",
+              "name": "BACnet/IP interface",
+              "addresses": [
+                {
+                  "id": "address-loyw3v28-4mc",
+                  "subnetId": "plan-controls-b",
+                  "ip": "10.40.20.10",
+                  "label": "Primary"
+                }
+              ],
+              "bacnetIpEnabled": true,
+              "bacnetScEnabled": false,
+              "scHubRole": "node",
+              "scHubUri": "",
+              "scFailoverHubUri": "",
+              "scHubId": "",
+              "scHubL3Reachable": false
+            }
+          ],
+          "bbmdEnabled": true,
+          "bdtPeerDeviceIds": [
+            "device-loyw3v28-xfyzzz"
+          ],
+          "foreignDeviceBbmdId": ""
+        }
+      ],
+      "networkType": "bacnet-ip",
+      "udpPort": 47808,
+      "bacnetNetworkNumber": "1002",
+      "mstpBaudRate": 38400,
+      "mstpMaxMaster": 127,
+      "arcnetDataRate": 2500,
+      "upstreamSubnetId": "",
+      "routerId": ""
+    },
+    {
+      "id": "plan-supervisory",
+      "name": "Supervisory",
+      "address": "10.40.30.0",
+      "cidr": 24,
+      "vlan": "30",
+      "color": "#a78bfa",
+      "devices": [
+        {
+          "id": "device-loyw3v28-t4yeee",
+          "name": "BMS Server",
+          "kind": "server",
+          "notes": "Foreign device registered to Controls A · imported from Network Planner",
+          "nics": [
+            {
+              "id": "nic-loyw3v28-ukmlll",
+              "name": "BMS network interface",
+              "addresses": [
+                {
+                  "id": "address-loyw3v28-w0asss",
+                  "subnetId": "plan-supervisory",
+                  "ip": "10.40.30.20",
+                  "label": "Primary"
+                }
+              ],
+              "bacnetIpEnabled": true,
+              "bacnetScEnabled": true,
+              "scHubRole": "node",
+              "scHubUri": "",
+              "scFailoverHubUri": "",
+              "scHubId": "",
+              "scHubL3Reachable": false
+            }
+          ],
+          "bbmdEnabled": false,
+          "bdtPeerDeviceIds": [],
+          "foreignDeviceBbmdId": "device-loyw3v28-xfyzzz"
+        }
+      ],
+      "networkType": "bacnet-ip",
+      "udpPort": 47809,
+      "bacnetNetworkNumber": "1003",
+      "mstpBaudRate": 38400,
+      "mstpMaxMaster": 127,
+      "arcnetDataRate": 2500,
+      "upstreamSubnetId": "",
+      "routerId": ""
+    },
+    {
+      "id": "plan-mstp-a",
+      "name": "AHU MS/TP",
+      "address": "",
+      "cidr": 24,
+      "vlan": "",
+      "color": "#fb923c",
+      "devices": [],
+      "networkType": "mstp",
+      "udpPort": 47808,
+      "bacnetNetworkNumber": "2001",
+      "mstpBaudRate": 38400,
+      "mstpMaxMaster": 63,
+      "arcnetDataRate": 2500,
+      "upstreamSubnetId": "plan-controls-a",
+      "routerId": "device-loyw3v28-620777"
+    },
+    {
+      "id": "plan-arc-a",
+      "name": "ALC ARC156",
+      "address": "",
+      "cidr": 24,
+      "vlan": "",
+      "color": "#2dd4bf",
+      "devices": [],
+      "networkType": "arcnet",
+      "udpPort": 47808,
+      "bacnetNetworkNumber": "3001",
+      "mstpBaudRate": 38400,
+      "mstpMaxMaster": 127,
+      "arcnetDataRate": 156,
+      "upstreamSubnetId": "plan-controls-a",
+      "routerId": "device-loyw3v28-ad0sss"
+    }
+  ],
+  "infrastructure": [
+    {
+      "id": "infra-loyw3v28-q9m",
+      "name": "Core Router",
+      "kind": "router",
+      "ip": "",
+      "subnetIds": [
+        "plan-controls-a",
+        "plan-controls-b",
+        "plan-supervisory"
+      ],
+      "notes": "Planned gateway interfaces: Controls A 10.40.10.1 · Controls B 10.40.20.1 · Supervisory 10.40.30.1",
+      "uri": "",
+      "failoverIp": "",
+      "failoverUri": "",
+      "peerInfrastructureIds": [],
+      "underlaySubnetIds": []
+    },
+    {
+      "id": "infra-loyw3v28-rpa777",
+      "name": "Primary SC Hub HA Cluster",
+      "kind": "sc-hub-cluster",
+      "ip": "10.40.10.5",
+      "subnetIds": [
+        "plan-controls-a"
+      ],
+      "notes": "Primary: Primary SC Hub; failover: Failover SC Hub",
+      "uri": "wss://10.40.10.5:443",
+      "failoverIp": "10.40.10.6",
+      "failoverUri": "wss://10.40.10.6:443",
+      "peerInfrastructureIds": [],
+      "underlaySubnetIds": [
+        "plan-controls-a"
+      ]
+    }
+  ],
+  "paths": [],
+  "viewMode": "networks"
+}

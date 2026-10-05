@@ -24,4 +24,21 @@ describe('NetworkDiagramPage integration', () => {
     wrapper.unmount();
     expect(JSON.parse(values.get(DIAGRAM_STORAGE_KEY)!).version).toBe(2);
   });
+
+  it('can return from the physical visualization using the preview toolbar', async () => {
+    values.set(DIAGRAM_STORAGE_KEY, JSON.stringify({ version: 1, title: 'Physical site', notes: '', subnets: [], infrastructure: [], paths: [], viewMode: 'physical' }));
+    const wrapper = mount(NetworkDiagramPage);
+    await wrapper.vm.$nextTick();
+
+    const visualization = wrapper.get('#diagram-visualization-mode');
+    expect((visualization.element as HTMLSelectElement).value).toBe('physical');
+    expect(wrapper.find('.physical-diagram-svg').exists()).toBe(true);
+    expect(wrapper.find('#diagram-layout-mode').exists()).toBe(false);
+
+    await visualization.setValue('detailed');
+
+    expect(wrapper.find('.physical-diagram-svg').exists()).toBe(false);
+    expect(wrapper.find('#diagram-layout-mode').exists()).toBe(true);
+    expect(wrapper.find('.network-diagram-svg').exists()).toBe(true);
+  });
 });

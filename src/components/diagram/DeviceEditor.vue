@@ -1,0 +1,22 @@
+<template>
+  <div :id="`config-device-${device.id}`" tabindex="-1" class="device-editor-block config-target" :class="{ 'config-target-active': activeConfigTarget === `device-${device.id}` }">
+    <div class="device-editor-row"><div class="device-fields"><input v-model="device.name" type="text" aria-label="Device name" placeholder="Device name"><select v-model="device.kind" aria-label="Device type"><option v-for="option in deviceKindOptions" :key="option.value" :value="option.value">{{ option.label }}</option></select><span class="device-address-count">{{ device.nics.length }} NIC{{ device.nics.length === 1 ? '' : 's' }} · {{ actions.addressCount(device) }} address{{ actions.addressCount(device) === 1 ? '' : 'es' }}</span></div><button class="row-remove-button" type="button" title="Remove device" @click="actions.removeDevice(subnet, device.id)">×</button></div>
+    <div class="device-secondary-actions"><button class="device-move-button" type="button" :disabled="!actions.movableSubnets(subnet).length" :title="actions.movableSubnets(subnet).length ? 'Move this device and its local addresses to another subnet' : 'Add another compatible subnet before moving this device'" @click="actions.openMoveDeviceDialog(device, subnet)">Move to subnet</button></div>
+    <AceToggle :model-value="Boolean(device.requiredForRouting)" label="BACnet router / bridge between datalinks" description="Route between services or networks assigned to this device's NICs" @update:model-value="device.requiredForRouting = $event" />
+    <AceToggle v-if="isIpDevice && device.nics.some(nic => nic.bacnetIpEnabled)" :model-value="Boolean(device.bbmdEnabled)" label="Hosts a BBMD service" description="This BACnet device also distributes BACnet/IP broadcasts" @update:model-value="actions.setDeviceBbmd(device, $event)" />
+    <details v-if="device.bbmdEnabled" class="device-relationship-editor bdt-peer-editor"><summary><span>Broadcast Distribution Table</span><em>{{ device.bdtPeerDeviceIds?.length ?? 0 }} {{ (device.bdtPeerDeviceIds?.length ?? 0) === 1 ? 'peer' : 'peers' }}</em></summary><div class="bdt-peer-editor-body"><span class="field-hint">Select a BBMD to create or remove a mutual BDT relationship.</span><span v-if="!actions.otherBbmdDevices(device, subnet.id).length" class="field-hint">Enable BBMD service on a device in another IP subnet to create BDT relationships.</span><div v-else class="subnet-checkboxes"><label v-for="peer in actions.otherBbmdDevices(device, subnet.id)" :key="peer.device.id" class="checkbox-chip"><input type="checkbox" :checked="actions.isBdtPeer(device, peer.device.id)" @change="actions.toggleBdtPeer(device, peer.device.id)"><span>{{ peer.device.name }} · {{ peer.subnet.name }}</span></label></div></div></details>
+    <div v-if="isIpDevice && device.nics.some(nic => nic.bacnetIpEnabled)" class="device-relationship-editor"><label :for="`fdr-target-${device.id}`">Foreign Device Registration</label><select :id="`fdr-target-${device.id}`" v-model="device.foreignDeviceBbmdId"><option value="">Not registered as a foreign device</option><option v-for="target in actions.foreignBbmdOptions(device, subnet.id)" :key="target.device.id" :value="target.device.id">{{ target.device.name }} · {{ target.subnet.name }}</option></select><span class="field-hint">Registers this device with a BBMD on another IP subnet and adds it to that BBMD's Foreign Device Table.</span></div>
+    <div class="interface-summary"><span>Network interfaces and assigned addresses</span><button type="button" @click="actions.addDeviceNic(device, subnet.id)">+ Add NIC</button></div>
+    <NicEditor v-for="(nic, nicIndex) in device.nics" :key="nic.id" :device="device" :nic="nic" :nic-index="nicIndex" :subnet="subnet" :active-config-target="activeConfigTarget" :actions="actions" />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import AceToggle from '../AceToggle.vue';
+import NicEditor from './NicEditor.vue';
+import type { DeviceKind, DiagramDevice, DiagramSubnet } from '../../lib/network-diagram';
+import type { SubnetEditorActions } from './editor-types';
+const props = defineProps<{ device: DiagramDevice; subnet: DiagramSubnet; activeConfigTarget: string; deviceKindOptions: { value: DeviceKind; label: string }[]; actions: SubnetEditorActions }>();
+const isIpDevice = computed(() => !props.subnet.networkType || props.subnet.networkType === 'bacnet-ip');
+</script>

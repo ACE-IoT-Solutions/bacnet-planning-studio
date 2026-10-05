@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "name": "BACnet Studio by ACE IoT",
+  "version": "1.2.0",
+  "description": "Client-side tools for planning, diagramming, calculating, validating, and troubleshooting BACnet networks.",
+  "canonicalUrl": "https://ace-iot-solutions.github.io/bacnet-subnetting-primer/",
+  "runtime": {
+    "kind": "static-client-side-web-application",
+    "requiresJavaScript": true,
+    "persistence": "browser-local-storage",
+    "programmaticApi": false
+  },
+  "navigation": [
+    { "id": "planner", "url": "./#planner", "label": "Network Planner" },
+    { "id": "diagram", "url": "./#diagram", "label": "Diagram Builder" },
+    { "id": "calculator", "url": "./#calculator", "label": "Calculator & Simulator" },
+    { "id": "primer", "url": "./#primer", "label": "Interactive Primer" },
+    { "id": "glossary", "url": "./#glossary", "label": "Glossary" }
+  ],
+  "features": [
+    {
+      "id": "network-planning",
+      "route": "./#planner",
+      "supports": ["BACnet/IP", "BACnet/SC", "MS/TP", "ARCNET", "ALC ARC156", "BBMD", "FDR", "VLANs", "routing", "physical-capacity-hints"],
+      "imports": ["planner-project-json-v1", "planner-project-json-v2"],
+      "exports": ["planner-project-json-v2", "xlsx", "diagram-project-v2-handoff"]
+    },
+    {
+      "id": "network-diagramming",
+      "route": "./#diagram",
+      "supports": ["logical-topology", "physical-topology", "cabling", "ports", "BBMD-peering", "connectivity-tests", "diagnostics"],
+      "imports": ["diagram-project-json-v1", "diagram-project-json-v2", "ACE-BBMD-Manager-state", "Nmap-normal-text"],
+      "exports": ["diagram-project-json-v2", "diagram-project-json-v1-legacy", "svg", "pdf", "xlsx"]
+    },
+    {
+      "id": "subnet-calculation-and-simulation",
+      "route": "./#calculator",
+      "supports": ["IPv4-subnet-calculation", "BACnet-IP-UDP-ports", "BBMD-discovery", "unicast-path-simulation"]
+    },
+    {
+      "id": "learning",
+      "route": "./#primer",
+      "supports": ["BACnet-fundamentals", "interactive-network-scenarios", "physical-layer-guidance"]
+    },
+    {
+      "id": "terminology",
+      "route": "./#glossary",
+      "supports": ["search", "deep-linked-terms"]
+    }
+  ],
+  "projectFormats": [
+    {
+      "id": "diagram-project-v2",
+      "mediaType": "application/json",
+      "schema": "./schemas/diagram-project-v2.schema.json",
+      "importRoute": "./#diagram",
+      "exportAction": "Save project"
+    },
+    {
+      "id": "planner-project-v2",
+      "mediaType": "application/json",
+      "schema": "./schemas/planner-project-v2.schema.json",
+      "importRoute": "./#planner",
+      "exportAction": "Save plan"
+    }
+  ],
+  "documentation": {
+    "llms": "./llms.txt",
+    "agentGuide": "./agent-guide.html"
+  }
+}

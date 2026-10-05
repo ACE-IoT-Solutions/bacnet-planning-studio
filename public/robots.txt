@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ace-iot-solutions.github.io/bacnet-subnetting-primer/sitemap.xml
