@@ -69,6 +69,7 @@ python3 -m http.server --bind 127.0.0.1 8000
 This project includes an automated GitHub Actions workflow to build and deploy the application.
 
 To deploy:
-1. Push or merge changes to the `deploy` branch.
-2. The GitHub Actions workflow defined in [.github/workflows/deploy.yml](file:///.github/workflows/deploy.yml) will automatically run, installing dependencies via `npm ci`, compiling the production bundle, and deploying the resulting `dist/` directory.
-3. In your GitHub repository settings under **Pages**, ensure that **Build and deployment** -> **Source** is set to **GitHub Actions**.
+1. Add the Google Analytics measurement ID as the repository Actions secret `GA_MEASUREMENT_ID`. The workflow exposes it only to the build step; the Vite build additionally requires the canonical repository's GitHub Actions environment before it injects analytics.
+2. Push or merge changes to the `deploy` branch.
+3. The GitHub Actions workflow defined in [.github/workflows/deploy.yml](file:///.github/workflows/deploy.yml) will automatically run, installing dependencies via `npm ci`, compiling the production bundle, and deploying the resulting `dist/` directory.
+4. In your GitHub repository settings under **Pages**, ensure that **Build and deployment** -> **Source** is set to **GitHub Actions**.
