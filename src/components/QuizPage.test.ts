@@ -15,8 +15,10 @@ import {
 describe('QuizPage', () => {
   const values = new Map<string, string>();
   const writeText = vi.fn<(_: string) => Promise<void>>();
+  const writeImage = vi.fn<(_: ClipboardItem[]) => Promise<void>>();
 
   beforeEach(() => {
+    vi.restoreAllMocks();
     values.clear();
     values.set(BACNET_QUIZ_PARTICIPANT_KEY, JSON.stringify({ version: 1, email: 'learner@example.com', consentAt: '2026-11-16T15:00:00.000Z' }));
     vi.stubGlobal('localStorage', {
@@ -26,7 +28,20 @@ describe('QuizPage', () => {
     });
     writeText.mockReset();
     writeText.mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    writeImage.mockReset();
+    writeImage.mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText, write: writeImage } });
+    vi.stubGlobal('ClipboardItem', class {
+      constructor(public readonly items: Record<string, Blob>) {}
+    });
+    const gradient = { addColorStop: vi.fn() };
+    const context = {
+      createLinearGradient: vi.fn(() => gradient), fillRect: vi.fn(), beginPath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(),
+      stroke: vi.fn(), arc: vi.fn(), closePath: vi.fn(), fillText: vi.fn(), fillStyle: '', strokeStyle: '', lineWidth: 1,
+      font: '', textAlign: 'left'
+    };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => context as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(callback => callback(new Blob(['png'], { type: 'image/png' })));
   });
 
   it('requires a valid-looking email and privacy acknowledgement before showing questions', async () => {
@@ -102,8 +117,15 @@ describe('QuizPage', () => {
     expect(writeText).toHaveBeenCalledOnce();
     expect(writeText.mock.calls[0][0]).toContain('30/35 (86%)');
     expect(writeText.mock.calls[0][0]).toContain('#BACnet #BuildingAutomation #BAS');
+    expect(writeText.mock.calls[0][0]).toContain('/quiz.html');
     expect(writeText.mock.calls[0][0]).not.toContain('learner@example.com');
     expect(wrapper.text()).toContain('Badge copied to your clipboard.');
+
+    await wrapper.get('[data-testid="copy-quiz-image"]').trigger('click');
+    await flushPromises();
+    expect(writeImage).toHaveBeenCalledOnce();
+    expect(writeImage.mock.calls[0][0][0]).toBeInstanceOf(ClipboardItem);
+    expect(wrapper.text()).toContain('Badge image copied. Paste it into your social post.');
   });
 
   it('unlocks a separate mastery badge after all 100 questions are answered correctly', async () => {
