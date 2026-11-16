@@ -44,6 +44,7 @@ jobs:
         run: npm run build
         env:
           GA_MEASUREMENT_ID: ${{ secrets.GA_MEASUREMENT_ID }}
+          QUIZ_RESULTS_ENDPOINT: ${{ secrets.QUIZ_RESULTS_ENDPOINT }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v6

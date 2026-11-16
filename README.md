@@ -28,6 +28,7 @@ This is designed for control engineers, network integrators, and building automa
   - **BBMD Tunneling Simulator:** Traces how BACnet Broadcast Management Devices encapsulate and tunnel broadcasts across IP routers.
   - **Discovery vs. Reachability:** Demonstrates how a BBMD-forwarded I-Am can make a device visible even though later ReadProperty and other unicast services fail because the advertised address is not routable.
 - **Searchable BACnet Glossary:** Defines protocol, message, datalink, IP-networking, and system-delivery terminology, with direct links from explanatory content throughout every application page.
+- **BACnet Competency Quiz (review candidate):** Draws 35 questions from a versioned JSON question bank, saves answers and mastery progress locally, and prioritizes questions the user has not yet answered correctly. Contributors can add questions without changing application code; see `docs/contributing-quiz-questions.md`. The generated bank is available for manual review in `docs/reviews/bacnet-competency-question-bank.md`.
 - **Updates Signup:** Presents a dismissible, one-time email signup and keeps an always-available signup control in the footer.
 
 ## Technology Stack
@@ -70,6 +71,7 @@ This project includes an automated GitHub Actions workflow to build and deploy t
 
 To deploy:
 1. Add the Google Analytics measurement ID as the repository Actions secret `GA_MEASUREMENT_ID`. The workflow exposes it only to the build step; the Vite build additionally requires the canonical repository's GitHub Actions environment before it injects analytics.
-2. Push or merge changes to the `deploy` branch.
-3. The GitHub Actions workflow defined in [.github/workflows/deploy.yml](file:///.github/workflows/deploy.yml) will automatically run, installing dependencies via `npm ci`, compiling the production bundle, and deploying the resulting `dist/` directory.
-4. In your GitHub repository settings under **Pages**, ensure that **Build and deployment** -> **Source** is set to **GitHub Actions**.
+2. Deploy the quiz-results Apps Script by following `integrations/google-apps-script/README.md`, then store its `/exec` URL as the repository Actions secret `QUIZ_RESULTS_ENDPOINT`. The endpoint is injected only into canonical CI builds.
+3. Push or merge changes to the `deploy` branch.
+4. The GitHub Actions workflow defined in [.github/workflows/deploy.yml](file:///.github/workflows/deploy.yml) will automatically run, installing dependencies via `npm ci`, compiling the production bundle, and deploying the resulting `dist/` directory.
+5. In your GitHub repository settings under **Pages**, ensure that **Build and deployment** -> **Source** is set to **GitHub Actions**.

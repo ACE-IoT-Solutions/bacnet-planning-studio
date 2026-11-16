@@ -39,9 +39,15 @@ export default defineConfig(({ command }) => {
     && process.env.CI === 'true'
     && process.env.GITHUB_REPOSITORY === DEPLOY_REPOSITORY;
   const shouldInjectAnalytics = isCanonicalCiBuild && /^G-[A-Z0-9]+$/.test(measurementId ?? '');
+  const quizResultsEndpoint = process.env.QUIZ_RESULTS_ENDPOINT?.trim();
+  const shouldInjectQuizResultsEndpoint = isCanonicalCiBuild
+    && /^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(quizResultsEndpoint ?? '');
 
   return {
     plugins: [vue(), ...(shouldInjectAnalytics ? [googleAnalyticsPlugin(measurementId)] : [])],
+    define: {
+      __QUIZ_RESULTS_ENDPOINT__: JSON.stringify(shouldInjectQuizResultsEndpoint ? quizResultsEndpoint : ''),
+    },
     base: './', // Ensures relative assets so it hosts properly on GitHub Pages subpaths
     resolve: {
       alias: {

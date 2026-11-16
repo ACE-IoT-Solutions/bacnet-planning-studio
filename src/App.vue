@@ -53,6 +53,14 @@
         </svg>
         Interactive Primer
       </button>
+      <button id="tab-quiz" class="tab-btn" :class="{ active: activeTab === 'quiz' }" role="tab" :aria-selected="activeTab === 'quiz'" aria-controls="panel-quiz" @click="setActiveTab('quiz')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M9.8 9a2.4 2.4 0 1 1 3.4 2.2c-.8.4-1.2.9-1.2 1.8"></path>
+          <path d="M12 17h.01"></path>
+        </svg>
+        Competency Quiz
+      </button>
       <button id="tab-glossary" class="tab-btn" :class="{ active: activeTab === 'glossary' }" role="tab" :aria-selected="activeTab === 'glossary'" aria-controls="panel-glossary" @click="setActiveTab('glossary')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
@@ -75,6 +83,9 @@
     </div>
     <div id="panel-primer" v-show="activeTab === 'primer'" class="page-tab" :class="{ active: activeTab === 'primer' }" role="tabpanel" aria-labelledby="tab-primer">
       <PrimerPage />
+    </div>
+    <div id="panel-quiz" v-show="activeTab === 'quiz'" class="page-tab" :class="{ active: activeTab === 'quiz' }" role="tabpanel" aria-labelledby="tab-quiz">
+      <QuizPage />
     </div>
     <div id="panel-glossary" v-show="activeTab === 'glossary'" class="page-tab" :class="{ active: activeTab === 'glossary' }" role="tabpanel" aria-labelledby="tab-glossary">
       <GlossaryPage :target="glossaryTarget" @navigate="openGlossary" />
@@ -100,6 +111,7 @@
 import { ref, provide, onMounted, onUnmounted, watch } from 'vue';
 import CalculatorPage from './components/CalculatorPage.vue';
 import PrimerPage from './components/PrimerPage.vue';
+import QuizPage from './components/QuizPage.vue';
 import PlannerPage from './components/PlannerPage.vue';
 import NetworkDiagramPage from './components/NetworkDiagramPage.vue';
 import GlossaryPage from './components/GlossaryPage.vue';
@@ -113,7 +125,7 @@ interface LogEntry {
   timestamp: string;
 }
 
-type AppTab = 'calculator' | 'primer' | 'planner' | 'diagram' | 'glossary';
+type AppTab = 'calculator' | 'primer' | 'planner' | 'diagram' | 'quiz' | 'glossary';
 const activeTab = ref<AppTab>('planner');
 const glossaryTarget = ref<string | null>(null);
 const signupVisible = ref(false);
@@ -123,7 +135,7 @@ const SIGNUP_SEEN_KEY = 'ace-updates-signup-seen-v1';
 // Synchronize hash to activeTab
 const updateTabFromHash = () => {
   const [tab, target] = window.location.hash.replace('#', '').split('/');
-  if (tab === 'calculator' || tab === 'primer' || tab === 'planner' || tab === 'diagram' || tab === 'glossary') {
+  if (tab === 'calculator' || tab === 'primer' || tab === 'planner' || tab === 'diagram' || tab === 'quiz' || tab === 'glossary') {
     activeTab.value = tab;
     glossaryTarget.value = tab === 'glossary' && target ? decodeURIComponent(target) : null;
   } else {

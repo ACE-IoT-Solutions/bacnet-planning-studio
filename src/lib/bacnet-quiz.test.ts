@@ -1,0 +1,57 @@
+import { describe, expect, it } from 'vitest';
+import {
+  bacnetQuizQuestions,
+  emptyQuizProgress,
+  recordQuizAnswer,
+  selectQuizQuestionIds,
+  type QuizProgress
+} from './bacnet-quiz';
+
+describe('BACnet competency question bank', () => {
+  it('contains at least 100 structurally valid, uniquely identified questions', () => {
+    expect(bacnetQuizQuestions.length).toBeGreaterThanOrEqual(100);
+    expect(new Set(bacnetQuizQuestions.map(question => question.id)).size).toBe(bacnetQuizQuestions.length);
+    for (const question of bacnetQuizQuestions) {
+      expect(question.id).toMatch(/^BAC-[0-9]{3,}$/);
+      expect(question.category.trim().length).toBeGreaterThanOrEqual(2);
+      expect(['foundation', 'intermediate', 'advanced']).toContain(question.difficulty);
+      expect(question.prompt.length).toBeGreaterThan(12);
+      expect(question.options).toHaveLength(4);
+      expect(new Set(question.options).size).toBe(4);
+      expect(question.options.every(option => option.trim().length > 0)).toBe(true);
+      expect(question.correctIndex).toBeGreaterThanOrEqual(0);
+      expect(question.correctIndex).toBeLessThan(4);
+      expect(question.explanation.length).toBeGreaterThan(12);
+    }
+    const answerPositionCounts = [0, 1, 2, 3].map(index => bacnetQuizQuestions.filter(question => question.correctIndex === index).length);
+    expect(Math.max(...answerPositionCounts) - Math.min(...answerPositionCounts)).toBeLessThanOrEqual(5);
+  });
+
+  it('selects 35 questions that have not yet been answered correctly', () => {
+    const progress = emptyQuizProgress();
+    for (const question of bacnetQuizQuestions.slice(0, 40)) {
+      progress.answers[question.id] = { attempts: 1, correctAnswers: 1, mastered: true, lastSelectedIndex: question.correctIndex };
+    }
+    const selected = selectQuizQuestionIds(bacnetQuizQuestions, progress, 35, () => 0.5);
+    expect(selected).toHaveLength(35);
+    expect(selected.every(id => !progress.answers[id]?.mastered)).toBe(true);
+  });
+
+  it('uses mastered questions only after the remaining pool is exhausted', () => {
+    const progress: QuizProgress = { version: 1, answers: {} };
+    for (const question of bacnetQuizQuestions.slice(0, 90)) {
+      progress.answers[question.id] = { attempts: 1, correctAnswers: 1, mastered: true, lastSelectedIndex: question.correctIndex };
+    }
+    const selected = selectQuizQuestionIds(bacnetQuizQuestions, progress, 35, () => 0.25);
+    const unmasteredSelected = selected.filter(id => !progress.answers[id]?.mastered);
+    expect(selected).toHaveLength(35);
+    expect(unmasteredSelected).toHaveLength(10);
+  });
+
+  it('keeps a question mastered after a later incorrect answer', () => {
+    const question = bacnetQuizQuestions[0];
+    const mastered = recordQuizAnswer(emptyQuizProgress(), question, question.correctIndex);
+    const answeredIncorrectly = recordQuizAnswer(mastered, question, (question.correctIndex + 1) % 4);
+    expect(answeredIncorrectly.answers[question.id]).toMatchObject({ attempts: 2, correctAnswers: 1, mastered: true });
+  });
+});
