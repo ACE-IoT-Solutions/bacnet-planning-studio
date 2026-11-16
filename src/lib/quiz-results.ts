@@ -30,6 +30,14 @@ export interface QuizResultPayload {
 
 export type QuizResultDeliveryStatus = 'sent' | 'unavailable' | 'failed';
 
+export interface QuizResultDelivery {
+  status: QuizResultDeliveryStatus;
+  message: string;
+  confirmed: boolean;
+  duplicate?: boolean;
+  requestId?: string;
+}
+
 export function normalizeQuizEmail(value: string): string {
   return value.trim().toLocaleLowerCase();
 }
@@ -81,13 +89,44 @@ export function buildQuizResultPayload(
 export async function submitQuizResult(
   payload: QuizResultPayload,
   endpoint = QUIZ_RESULTS_ENDPOINT
-): Promise<QuizResultDeliveryStatus> {
-  if (!isQuizResultsEndpointConfigured(endpoint)) return 'unavailable';
+): Promise<QuizResultDelivery> {
+  if (!isQuizResultsEndpointConfigured(endpoint)) return {
+    status: 'unavailable',
+    message: 'The results receiver is not configured in this build.',
+    confirmed: false
+  };
   try {
     const body = new URLSearchParams({ payload: JSON.stringify(payload) });
-    await fetch(endpoint, { method: 'POST', mode: 'no-cors', body, keepalive: true });
-    return 'sent';
-  } catch {
-    return 'failed';
+    const response = await fetch(endpoint, { method: 'POST', body, keepalive: true });
+    let result: { ok?: boolean; error?: string; duplicate?: boolean; requestId?: string };
+    try {
+      result = await response.json() as typeof result;
+    } catch {
+      return {
+        status: 'failed',
+        message: `The results receiver returned an unreadable response (HTTP ${response.status}).`,
+        confirmed: false
+      };
+    }
+    if (!response.ok || result.ok !== true) return {
+      status: 'failed',
+      message: result.error || `The results receiver rejected the submission (HTTP ${response.status}).`,
+      confirmed: false,
+      requestId: result.requestId
+    };
+    return {
+      status: 'sent',
+      message: result.duplicate ? 'This quiz session was already stored.' : 'The results receiver confirmed that this quiz was stored.',
+      confirmed: true,
+      duplicate: result.duplicate,
+      requestId: result.requestId
+    };
+  } catch (error) {
+    const detail = error instanceof Error && error.message ? ` ${error.message}` : '';
+    return {
+      status: 'failed',
+      message: `The browser could not reach or read the results receiver.${detail}`,
+      confirmed: false
+    };
   }
 }

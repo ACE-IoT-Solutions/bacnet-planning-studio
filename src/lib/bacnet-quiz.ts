@@ -34,6 +34,9 @@ export interface QuizSession {
   completedAt?: string;
   deliveryStatus?: 'sending' | 'sent' | 'unavailable' | 'failed';
   deliveryAttemptedAt?: string;
+  deliveryConfirmedAt?: string;
+  deliveryMessage?: string;
+  deliveryRequestId?: string;
 }
 
 export interface QuizParticipant {
@@ -132,6 +135,7 @@ export function parseQuizSession(raw: string | null): QuizSession | null {
     const parsed = JSON.parse(raw) as Partial<QuizSession>;
     if (parsed.version !== 1 || !Array.isArray(parsed.questionIds) || !parsed.questionIds.length || !parsed.answers) return null;
     if (parsed.questionIds.some(id => !bacnetQuizQuestionById.has(id))) return null;
+    const legacyUnverifiedDelivery = parsed.deliveryStatus === 'sent' && !parsed.deliveryConfirmedAt;
     return {
       version: 1,
       sessionId: typeof parsed.sessionId === 'string' && parsed.sessionId ? parsed.sessionId : createQuizSessionId(),
@@ -140,8 +144,13 @@ export function parseQuizSession(raw: string | null): QuizSession | null {
       currentIndex: Math.min(Math.max(Number(parsed.currentIndex) || 0, 0), parsed.questionIds.length - 1),
       startedAt: parsed.startedAt || new Date().toISOString(),
       completedAt: parsed.completedAt,
-      deliveryStatus: parsed.deliveryStatus,
-      deliveryAttemptedAt: parsed.deliveryAttemptedAt
+      deliveryStatus: legacyUnverifiedDelivery ? 'failed' : parsed.deliveryStatus,
+      deliveryAttemptedAt: parsed.deliveryAttemptedAt,
+      deliveryConfirmedAt: parsed.deliveryConfirmedAt,
+      deliveryMessage: legacyUnverifiedDelivery
+        ? 'This result was sent by an older build but was not verified by the receiver. Retry to confirm storage.'
+        : parsed.deliveryMessage,
+      deliveryRequestId: parsed.deliveryRequestId
     };
   } catch {
     return null;

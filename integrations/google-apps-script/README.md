@@ -49,3 +49,5 @@ The Vite build injects this endpoint only when GitHub Actions builds the canonic
 ## Updating the Apps Script
 
 After changing `Code.gs`, create a new Apps Script version and edit the existing deployment to use it. Retaining the same deployment keeps the `/exec` URL and GitHub secret unchanged.
+
+The receiver writes structured execution-log events for every request: `received`, `stored`, `duplicate`, `pipedrive_failed`, `completed`, or `failed`. Each response and log entry includes the same request ID so a browser report can be matched to the Apps Script execution without logging the participant's email address.

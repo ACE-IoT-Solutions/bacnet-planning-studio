@@ -21,13 +21,31 @@ describe('quiz result delivery', () => {
   });
 
   it('posts an encoded payload only when an Apps Script endpoint is configured', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response());
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, requestId: 'request-1' }), {
+      headers: { 'Content-Type': 'application/json' }
+    }));
     vi.stubGlobal('fetch', fetchMock);
     const payload = { sessionId: 'test' } as never;
-    expect(await submitQuizResult(payload, '')).toBe('unavailable');
+    expect(await submitQuizResult(payload, '')).toMatchObject({ status: 'unavailable', confirmed: false });
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(await submitQuizResult(payload, 'https://script.google.com/macros/s/deployment-id/exec')).toBe('sent');
+    expect(await submitQuizResult(payload, 'https://script.google.com/macros/s/deployment-id/exec')).toMatchObject({ status: 'sent', confirmed: true, requestId: 'request-1' });
     expect(fetchMock).toHaveBeenCalledOnce();
-    expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: 'POST', mode: 'no-cors', keepalive: true });
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: 'POST', keepalive: true });
+    expect(fetchMock.mock.calls[0][1]).not.toHaveProperty('mode');
+  });
+
+  it('surfaces receiver rejections and browser-level failures', async () => {
+    const payload = { sessionId: 'test' } as never;
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: false, error: 'Sheet write failed.', requestId: 'request-2' }), {
+      headers: { 'Content-Type': 'application/json' }
+    })));
+    expect(await submitQuizResult(payload, 'https://script.google.com/macros/s/deployment-id/exec')).toMatchObject({
+      status: 'failed', confirmed: false, message: 'Sheet write failed.', requestId: 'request-2'
+    });
+
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+    expect(await submitQuizResult(payload, 'https://script.google.com/macros/s/deployment-id/exec')).toMatchObject({
+      status: 'failed', confirmed: false, message: expect.stringContaining('Failed to fetch')
+    });
   });
 });

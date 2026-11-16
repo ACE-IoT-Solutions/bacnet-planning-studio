@@ -3,6 +3,7 @@
  */
 
 const QUIZ_RESULTS_SHEET_NAME = 'Quiz Results';
+const QUIZ_RECEIVER_VERSION = '2026-11-16.2';
 const QUIZ_RESULTS_HEADERS = Object.freeze([
   'Submitted At',
   'Session ID',
@@ -34,36 +35,59 @@ function setupQuizResults() {
 }
 
 function doGet() {
-  return jsonResponse_({ ok: true, service: 'BACnet Studio quiz results' });
+  return jsonResponse_({ ok: true, service: 'BACnet Studio quiz results', receiverVersion: QUIZ_RECEIVER_VERSION });
 }
 
 function doPost(event) {
+  const requestId = Utilities.getUuid();
+  let sessionId = '';
   try {
     const rawPayload = event && event.parameter && event.parameter.payload;
     if (!rawPayload || rawPayload.length > 50000) throw new Error('Missing or oversized quiz payload.');
     const payload = JSON.parse(rawPayload);
+    sessionId = String(payload.sessionId || '');
+    logQuizEvent_('received', { requestId, sessionId, payloadBytes: rawPayload.length });
     validateQuizPayload_(payload);
 
     const stored = appendQuizResult_(payload);
-    if (stored.duplicate) return jsonResponse_({ ok: true, duplicate: true, sessionId: payload.sessionId });
+    if (stored.duplicate) {
+      logQuizEvent_('duplicate', { requestId, sessionId, row: stored.row, sheet: stored.sheet.getName() });
+      return jsonResponse_({ ok: true, duplicate: true, sessionId: payload.sessionId, requestId });
+    }
+    logQuizEvent_('stored', { requestId, sessionId, row: stored.row, sheet: stored.sheet.getName() });
 
     let pipedriveResult;
     try {
       pipedriveResult = syncPipedrive_(payload);
     } catch (error) {
       pipedriveResult = { personId: '', status: 'failed', error: String(error && error.message ? error.message : error) };
+      logQuizEvent_('pipedrive_failed', { requestId, sessionId, error: pipedriveResult.error }, 'warning');
     }
     updatePipedriveResult_(stored.sheet, stored.row, pipedriveResult);
+    logQuizEvent_('completed', { requestId, sessionId, pipedriveStatus: pipedriveResult.status });
 
     return jsonResponse_({
       ok: true,
       sessionId: payload.sessionId,
-      pipedriveStatus: pipedriveResult.status
+      pipedriveStatus: pipedriveResult.status,
+      requestId
     });
   } catch (error) {
-    console.error(error);
-    return jsonResponse_({ ok: false, error: String(error && error.message ? error.message : error) });
+    const message = String(error && error.message ? error.message : error);
+    logQuizEvent_('failed', { requestId, sessionId, error: message }, 'error');
+    return jsonResponse_({ ok: false, error: message, requestId });
   }
+}
+
+function logQuizEvent_(eventName, details, level) {
+  const entry = JSON.stringify(Object.assign({
+    event: `quiz_result_${eventName}`,
+    receiverVersion: QUIZ_RECEIVER_VERSION,
+    timestamp: new Date().toISOString()
+  }, details || {}));
+  if (level === 'error') console.error(entry);
+  else if (level === 'warning') console.warn(entry);
+  else console.log(entry);
 }
 
 function validateQuizPayload_(payload) {

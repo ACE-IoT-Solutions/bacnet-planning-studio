@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   bacnetQuizQuestions,
   emptyQuizProgress,
+  parseQuizSession,
   recordQuizAnswer,
   selectQuizQuestionIds,
   type QuizProgress
@@ -79,5 +80,24 @@ describe('BACnet competency question bank', () => {
     const mastered = recordQuizAnswer(emptyQuizProgress(), question, question.correctIndex);
     const answeredIncorrectly = recordQuizAnswer(mastered, question, (question.correctIndex + 1) % 4);
     expect(answeredIncorrectly.answers[question.id]).toMatchObject({ attempts: 2, correctAnswers: 1, mastered: true });
+  });
+
+  it('marks legacy fire-and-forget deliveries as unverified and retryable', () => {
+    const question = bacnetQuizQuestions[0];
+    const parsed = parseQuizSession(JSON.stringify({
+      version: 1,
+      sessionId: 'legacy-session',
+      questionIds: [question.id],
+      answers: { [question.id]: question.correctIndex },
+      currentIndex: 0,
+      startedAt: '2026-11-16T15:00:00.000Z',
+      completedAt: '2026-11-16T15:01:00.000Z',
+      deliveryStatus: 'sent',
+      deliveryAttemptedAt: '2026-11-16T15:01:01.000Z'
+    }));
+    expect(parsed).toMatchObject({
+      deliveryStatus: 'failed',
+      deliveryMessage: expect.stringContaining('older build')
+    });
   });
 });

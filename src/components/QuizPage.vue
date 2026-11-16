@@ -97,11 +97,23 @@
         <h2>{{ sessionScore }} / {{ session.questionIds.length }}</h2>
         <p>{{ scoreMessage }}</p>
         <div class="quiz-delivery" :class="`quiz-delivery--${session.deliveryStatus ?? 'sending'}`" aria-live="polite">
-          <span v-if="session.deliveryStatus === 'sent'">Results sent for processing for {{ participant?.email }}.</span>
-          <span v-else-if="session.deliveryStatus === 'failed'">Results are saved in this browser, but could not be sent.</span>
+          <span v-if="session.deliveryStatus === 'sent'">Results storage confirmed for {{ participant?.email }}.</span>
+          <span v-else-if="session.deliveryStatus === 'failed'">Results are saved in this browser, but remote storage was not confirmed.</span>
           <span v-else-if="session.deliveryStatus === 'unavailable'">Results are saved in this browser. Remote collection is not configured in this build.</span>
-          <span v-else>Sending results…</span>
+          <span v-else>Sending results and waiting for confirmation…</span>
+          <strong v-if="session.deliveryMessage">{{ session.deliveryMessage }}</strong>
           <button v-if="session.deliveryStatus === 'failed' || session.deliveryStatus === 'unavailable'" type="button" @click="deliverQuizResult">Try again</button>
+          <details>
+            <summary>Submission details</summary>
+            <dl>
+              <div><dt>Session</dt><dd><code>{{ session.sessionId }}</code></dd></div>
+              <div><dt>Status</dt><dd>{{ session.deliveryStatus ?? 'sending' }}</dd></div>
+              <div><dt>Browser network</dt><dd>{{ browserOnline ? 'online' : 'offline' }}</dd></div>
+              <div><dt>Last attempt</dt><dd>{{ session.deliveryAttemptedAt || 'not attempted' }}</dd></div>
+              <div><dt>Confirmed</dt><dd>{{ session.deliveryConfirmedAt || 'not confirmed' }}</dd></div>
+              <div v-if="session.deliveryRequestId"><dt>Receiver request</dt><dd><code>{{ session.deliveryRequestId }}</code></dd></div>
+            </dl>
+          </details>
         </div>
         <section class="quiz-share" aria-labelledby="quiz-share-title">
           <div class="quiz-share__heading">
@@ -225,6 +237,7 @@ const sessionQuestions = computed(() => session.value.questionIds.flatMap(id => 
 const sessionScore = computed(() => sessionQuestions.value.filter(question => session.value.answers[question.id] === question.correctIndex).length);
 const scorePercentage = computed(() => Math.round((sessionScore.value / session.value.questionIds.length) * 100));
 const hasMasteryBadge = computed(() => masteredCount.value === bacnetQuizQuestions.length);
+const browserOnline = computed(() => typeof navigator === 'undefined' || navigator.onLine !== false);
 const missedQuestions = computed(() => sessionQuestions.value.filter(question => session.value.answers[question.id] !== question.correctIndex));
 const scoreMessage = computed(() => {
   const percent = sessionScore.value / session.value.questionIds.length;
@@ -465,9 +478,16 @@ async function copyBadgeImage(kind: 'quiz' | 'mastery') {
 async function deliverQuizResult() {
   if (!participant.value || !session.value.completedAt || session.value.deliveryStatus === 'sending') return;
   session.value.deliveryStatus = 'sending';
+  session.value.deliveryMessage = 'Waiting for the results receiver…';
+  session.value.deliveryConfirmedAt = undefined;
+  session.value.deliveryRequestId = undefined;
   session.value.deliveryAttemptedAt = new Date().toISOString();
   const payload = buildQuizResultPayload(session.value, participant.value, masteredCount.value);
-  session.value.deliveryStatus = await submitQuizResult(payload);
+  const delivery = await submitQuizResult(payload);
+  session.value.deliveryStatus = delivery.status;
+  session.value.deliveryMessage = delivery.message;
+  session.value.deliveryRequestId = delivery.requestId;
+  session.value.deliveryConfirmedAt = delivery.confirmed ? new Date().toISOString() : undefined;
 }
 
 function resetLearningHistory() {
@@ -535,7 +555,14 @@ function resetLearningHistory() {
 .quiz-delivery { display: flex; flex-wrap: wrap; gap: 0.45rem 0.8rem; align-items: center; margin-top: 0.9rem; padding: 0.7rem 0.8rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-secondary); font-size: 0.8rem; }
 .quiz-delivery--sent { border-color: rgba(20,174,92,0.45); background: var(--success-bg); }
 .quiz-delivery--failed { border-color: rgba(246,81,29,0.5); background: var(--error-bg); }
+.quiz-delivery > strong { flex-basis: 100%; color: inherit; font-weight: 650; }
 .quiz-delivery button { padding: 0; border: 0; border-bottom: 1px dotted currentColor; background: none; color: var(--secondary); cursor: pointer; }
+.quiz-delivery details { flex-basis: 100%; padding-top: 0.25rem; border-top: 1px solid var(--border-color); }
+.quiz-delivery summary { width: fit-content; color: var(--text-muted); cursor: pointer; }
+.quiz-delivery dl { display: grid; gap: 0.25rem; margin-top: 0.55rem; }
+.quiz-delivery dl div { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: 0.6rem; }
+.quiz-delivery dt { color: var(--text-muted); }
+.quiz-delivery dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
 .quiz-share { display: grid; gap: 0.9rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
 .quiz-share__heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1rem; align-items: end; }
 .quiz-share__heading h3 { font: 800 1.05rem var(--font-heading); }

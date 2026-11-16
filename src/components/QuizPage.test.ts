@@ -90,6 +90,30 @@ describe('QuizPage', () => {
     expect(resumed.findAll<HTMLInputElement>('input[type="radio"]').every(input => input.attributes('disabled') !== undefined)).toBe(true);
   });
 
+  it('shows persisted receiver errors and correlation details', async () => {
+    const questions = bacnetQuizQuestions.slice(0, 35);
+    values.set(BACNET_QUIZ_SESSION_KEY, JSON.stringify({
+      version: 1,
+      sessionId: 'observable-delivery',
+      questionIds: questions.map(question => question.id),
+      answers: Object.fromEntries(questions.map(question => [question.id, question.correctIndex])),
+      currentIndex: 34,
+      startedAt: '2026-11-16T15:00:00.000Z',
+      completedAt: '2026-11-16T15:30:00.000Z',
+      deliveryStatus: 'failed',
+      deliveryAttemptedAt: '2026-11-16T15:30:01.000Z',
+      deliveryMessage: 'Spreadsheet permission denied.',
+      deliveryRequestId: 'request-failed'
+    }));
+
+    const wrapper = mount(QuizPage);
+    expect(wrapper.text()).toContain('remote storage was not confirmed');
+    expect(wrapper.text()).toContain('Spreadsheet permission denied.');
+    expect(wrapper.text()).toContain('observable-delivery');
+    expect(wrapper.text()).toContain('request-failed');
+    expect(wrapper.find('.quiz-delivery button').exists()).toBe(true);
+  });
+
   it('copies a score badge without exposing the participant email', async () => {
     const questions = bacnetQuizQuestions.slice(0, 35);
     const answers = Object.fromEntries(questions.map((question, index) => [question.id, index < 30 ? question.correctIndex : (question.correctIndex + 1) % 4]));
@@ -106,10 +130,12 @@ describe('QuizPage', () => {
       startedAt: '2026-11-16T15:00:00.000Z',
       completedAt: '2026-11-16T15:30:00.000Z',
       deliveryStatus: 'sent',
-      deliveryAttemptedAt: '2026-11-16T15:30:01.000Z'
+      deliveryAttemptedAt: '2026-11-16T15:30:01.000Z',
+      deliveryConfirmedAt: '2026-11-16T15:30:02.000Z'
     }));
 
     const wrapper = mount(QuizPage);
+    expect(wrapper.text()).toContain('Results storage confirmed');
     expect(wrapper.text()).toContain('86% · Quiz complete');
     expect(wrapper.text()).toContain('Unlock at 100 / 100 mastered');
     expect(wrapper.find('[data-testid="copy-mastery-badge"]').exists()).toBe(false);
@@ -152,7 +178,8 @@ describe('QuizPage', () => {
       startedAt: '2026-11-16T15:00:00.000Z',
       completedAt: '2026-11-16T15:30:00.000Z',
       deliveryStatus: 'sent',
-      deliveryAttemptedAt: '2026-11-16T15:30:01.000Z'
+      deliveryAttemptedAt: '2026-11-16T15:30:01.000Z',
+      deliveryConfirmedAt: '2026-11-16T15:30:02.000Z'
     }));
 
     const wrapper = mount(QuizPage);
