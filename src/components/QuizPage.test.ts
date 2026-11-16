@@ -31,6 +31,9 @@ describe('QuizPage', () => {
     writeImage.mockReset();
     writeImage.mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText, write: writeImage } });
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:quiz-badge') });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
     vi.stubGlobal('ClipboardItem', class {
       constructor(public readonly items: Record<string, Blob>) {}
     });
@@ -126,6 +129,12 @@ describe('QuizPage', () => {
     expect(writeImage).toHaveBeenCalledOnce();
     expect(writeImage.mock.calls[0][0][0]).toBeInstanceOf(ClipboardItem);
     expect(wrapper.text()).toContain('Badge image copied. Paste it into your social post.');
+
+    await wrapper.get('[data-testid="download-quiz-image"]').trigger('click');
+    await flushPromises();
+    expect(URL.createObjectURL).toHaveBeenCalledOnce();
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce();
+    expect(wrapper.text()).toContain('Badge PNG downloaded.');
   });
 
   it('unlocks a separate mastery badge after all 100 questions are answered correctly', async () => {

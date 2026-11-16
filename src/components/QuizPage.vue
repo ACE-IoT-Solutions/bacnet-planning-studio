@@ -120,6 +120,7 @@
               <div class="quiz-share-card__actions">
                 <AppButton data-testid="copy-quiz-badge" size="sm" variant="secondary" @click="copySocialBadge('quiz')">{{ copiedBadge === 'quiz' ? 'Text copied!' : 'Copy post text' }}</AppButton>
                 <AppButton data-testid="copy-quiz-image" size="sm" @click="copyBadgeImage('quiz')">{{ copiedImage === 'quiz' ? 'Image copied!' : 'Copy badge image' }}</AppButton>
+                <AppButton data-testid="download-quiz-image" size="sm" @click="downloadBadgeImage('quiz')">{{ downloadedImage === 'quiz' ? 'Downloaded!' : 'Download PNG' }}</AppButton>
               </div>
             </article>
             <article class="quiz-share-card" :class="{ 'quiz-share-card--locked': !hasMasteryBadge }">
@@ -130,6 +131,7 @@
               <div v-if="hasMasteryBadge" class="quiz-share-card__actions">
                 <AppButton data-testid="copy-mastery-badge" size="sm" variant="secondary" @click="copySocialBadge('mastery')">{{ copiedBadge === 'mastery' ? 'Text copied!' : 'Copy post text' }}</AppButton>
                 <AppButton data-testid="copy-mastery-image" size="sm" @click="copyBadgeImage('mastery')">{{ copiedImage === 'mastery' ? 'Image copied!' : 'Copy badge image' }}</AppButton>
+                <AppButton data-testid="download-mastery-image" size="sm" @click="downloadBadgeImage('mastery')">{{ downloadedImage === 'mastery' ? 'Downloaded!' : 'Download PNG' }}</AppButton>
               </div>
               <span v-else class="quiz-share-card__lock">Unlock at {{ bacnetQuizQuestions.length }} / {{ bacnetQuizQuestions.length }} mastered</span>
             </article>
@@ -204,6 +206,7 @@ const emailError = ref('');
 const honeypot = ref('');
 const copiedBadge = ref<'quiz' | 'mastery' | null>(null);
 const copiedImage = ref<'quiz' | 'mastery' | null>(null);
+const downloadedImage = ref<'quiz' | 'mastery' | null>(null);
 const copyStatus = ref('');
 
 const currentQuestion = computed(() => bacnetQuizQuestionById.get(session.value.questionIds[session.value.currentIndex]));
@@ -420,13 +423,25 @@ function badgeImageBlob(kind: 'quiz' | 'mastery') {
   });
 }
 
-function downloadBadgeImage(blob: Blob, kind: 'quiz' | 'mastery') {
+function saveBadgeImage(blob: Blob, kind: 'quiz' | 'mastery') {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = kind === 'mastery' ? 'bacnet-studio-100-question-mastery.png' : `bacnet-studio-quiz-${sessionScore.value}-of-${session.value.questionIds.length}.png`;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+async function downloadBadgeImage(kind: 'quiz' | 'mastery') {
+  if (kind === 'mastery' && !hasMasteryBadge.value) return;
+  try {
+    saveBadgeImage(await badgeImageBlob(kind), kind);
+    downloadedImage.value = kind;
+    copyStatus.value = 'Badge PNG downloaded.';
+  } catch {
+    downloadedImage.value = null;
+    copyStatus.value = 'Could not create the badge image in this browser.';
+  }
 }
 
 async function copyBadgeImage(kind: 'quiz' | 'mastery') {
@@ -438,7 +453,7 @@ async function copyBadgeImage(kind: 'quiz' | 'mastery') {
       copiedImage.value = kind;
       copyStatus.value = 'Badge image copied. Paste it into your social post.';
     } else {
-      downloadBadgeImage(blob, kind);
+      saveBadgeImage(blob, kind);
       copyStatus.value = 'Clipboard images are unavailable in this browser, so the PNG was downloaded.';
     }
   } catch {
