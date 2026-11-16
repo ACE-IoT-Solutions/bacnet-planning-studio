@@ -103,6 +103,32 @@
           <span v-else>Sending results…</span>
           <button v-if="session.deliveryStatus === 'failed' || session.deliveryStatus === 'unavailable'" type="button" @click="deliverQuizResult">Try again</button>
         </div>
+        <section class="quiz-share" aria-labelledby="quiz-share-title">
+          <div class="quiz-share__heading">
+            <div>
+              <h3 id="quiz-share-title">Share your achievement</h3>
+              <p>Copy a ready-to-paste social badge. Your email is never included.</p>
+            </div>
+            <span class="quiz-copy-status" aria-live="polite">{{ copyStatus }}</span>
+          </div>
+          <div class="quiz-share__badges">
+            <article class="quiz-share-card">
+              <div class="quiz-share-badge quiz-share-badge--round">
+                <span class="quiz-share-badge__icon" aria-hidden="true">◆</span>
+                <span><small>BACNET STUDIO</small><strong>{{ scorePercentage }}% · Quiz complete</strong><em>{{ sessionScore }} of {{ session.questionIds.length }} correct</em></span>
+              </div>
+              <AppButton data-testid="copy-quiz-badge" size="sm" variant="secondary" @click="copySocialBadge('quiz')">{{ copiedBadge === 'quiz' ? 'Copied!' : 'Copy score badge' }}</AppButton>
+            </article>
+            <article class="quiz-share-card" :class="{ 'quiz-share-card--locked': !hasMasteryBadge }">
+              <div class="quiz-share-badge quiz-share-badge--mastery">
+                <span class="quiz-share-badge__icon" aria-hidden="true">★</span>
+                <span><small>BACNET STUDIO</small><strong>100% · Question bank mastered</strong><em>All {{ bacnetQuizQuestions.length }} questions answered correctly</em></span>
+              </div>
+              <AppButton v-if="hasMasteryBadge" data-testid="copy-mastery-badge" size="sm" variant="secondary" @click="copySocialBadge('mastery')">{{ copiedBadge === 'mastery' ? 'Copied!' : 'Copy mastery badge' }}</AppButton>
+              <span v-else class="quiz-share-card__lock">Unlock at {{ bacnetQuizQuestions.length }} / {{ bacnetQuizQuestions.length }} mastered</span>
+            </article>
+          </div>
+        </section>
         <div class="quiz-actions">
           <AppButton variant="primary" @click="startNewQuiz">Start another 35</AppButton>
           <AppButton variant="quiet" @click="resetLearningHistory">Reset learning history</AppButton>
@@ -170,6 +196,8 @@ const emailInput = ref(participant.value?.email ?? '');
 const privacyAccepted = ref(Boolean(participant.value));
 const emailError = ref('');
 const honeypot = ref('');
+const copiedBadge = ref<'quiz' | 'mastery' | null>(null);
+const copyStatus = ref('');
 
 const currentQuestion = computed(() => bacnetQuizQuestionById.get(session.value.questionIds[session.value.currentIndex]));
 const currentAnswer = computed(() => currentQuestion.value ? session.value.answers[currentQuestion.value.id] : undefined);
@@ -185,6 +213,8 @@ const sessionQuestions = computed(() => session.value.questionIds.flatMap(id => 
   return question ? [question] : [];
 }));
 const sessionScore = computed(() => sessionQuestions.value.filter(question => session.value.answers[question.id] === question.correctIndex).length);
+const scorePercentage = computed(() => Math.round((sessionScore.value / session.value.questionIds.length) * 100));
+const hasMasteryBadge = computed(() => masteredCount.value === bacnetQuizQuestions.length);
 const missedQuestions = computed(() => sessionQuestions.value.filter(question => session.value.answers[question.id] !== question.correctIndex));
 const scoreMessage = computed(() => {
   const percent = sessionScore.value / session.value.questionIds.length;
@@ -261,6 +291,54 @@ function startNewQuiz() {
   session.value = createQuizSession(progress.value);
 }
 
+function quizShareUrl() {
+  const url = new URL(import.meta.env.BASE_URL, window.location.href);
+  url.hash = 'quiz';
+  return url.toString();
+}
+
+function socialBadgeText(kind: 'quiz' | 'mastery') {
+  if (kind === 'mastery') return [
+    `🏆 BACnet Studio · ${bacnetQuizQuestions.length}/${bacnetQuizQuestions.length} Question Bank Mastery`,
+    `I correctly answered all ${bacnetQuizQuestions.length} questions in the BACnet Studio competency bank.`,
+    `Test your BACnet knowledge: ${quizShareUrl()}`,
+    '#BACnet #BuildingAutomation #BAS'
+  ].join('\n');
+  return [
+    `🏅 BACnet Studio · Quiz Complete · ${sessionScore.value}/${session.value.questionIds.length} (${scorePercentage.value}%)`,
+    'I completed the BACnet competency quiz. Can you beat my score?',
+    `Take the quiz: ${quizShareUrl()}`,
+    '#BACnet #BuildingAutomation #BAS'
+  ].join('\n');
+}
+
+function fallbackCopy(text: string) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.readOnly = true;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand('copy');
+  textarea.remove();
+  if (!copied) throw new Error('Copy command was rejected');
+}
+
+async function copySocialBadge(kind: 'quiz' | 'mastery') {
+  if (kind === 'mastery' && !hasMasteryBadge.value) return;
+  try {
+    const text = socialBadgeText(kind);
+    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+    else fallbackCopy(text);
+    copiedBadge.value = kind;
+    copyStatus.value = 'Badge copied to your clipboard.';
+  } catch {
+    copiedBadge.value = null;
+    copyStatus.value = 'Could not copy automatically. Check your browser clipboard permissions.';
+  }
+}
+
 async function deliverQuizResult() {
   if (!participant.value || !session.value.completedAt || session.value.deliveryStatus === 'sending') return;
   session.value.deliveryStatus = 'sending';
@@ -335,6 +413,23 @@ function resetLearningHistory() {
 .quiz-delivery--sent { border-color: rgba(20,174,92,0.45); background: var(--success-bg); }
 .quiz-delivery--failed { border-color: rgba(246,81,29,0.5); background: var(--error-bg); }
 .quiz-delivery button { padding: 0; border: 0; border-bottom: 1px dotted currentColor; background: none; color: var(--secondary); cursor: pointer; }
+.quiz-share { display: grid; gap: 0.9rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+.quiz-share__heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1rem; align-items: end; }
+.quiz-share__heading h3 { font: 800 1.05rem var(--font-heading); }
+.quiz-share__heading p { margin-top: 0.2rem; color: var(--text-muted); font-size: 0.78rem; }
+.quiz-copy-status { min-height: 1.1rem; color: var(--secondary); font-size: 0.75rem; }
+.quiz-share__badges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
+.quiz-share-card { display: grid; gap: 0.65rem; align-content: space-between; padding: 0.8rem; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: rgba(255,255,255,0.02); }
+.quiz-share-badge { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.75rem; align-items: center; min-height: 5.25rem; padding: 0.8rem; border: 1px solid rgba(var(--primary-rgb), 0.55); border-radius: var(--radius-md); background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.18), rgba(22,31,43,0.92)); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.035); }
+.quiz-share-badge--mastery { border-color: rgba(245,190,63,0.65); background: linear-gradient(135deg, rgba(245,190,63,0.18), rgba(22,31,43,0.94)); }
+.quiz-share-badge__icon { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border: 1px solid currentColor; border-radius: 50%; color: var(--primary); font-size: 1.1rem; }
+.quiz-share-badge--mastery .quiz-share-badge__icon { color: #f5be3f; }
+.quiz-share-badge small, .quiz-share-badge strong, .quiz-share-badge em { display: block; }
+.quiz-share-badge small { color: var(--text-muted); font: 800 0.62rem var(--font-heading); letter-spacing: 0.12em; }
+.quiz-share-badge strong { margin-top: 0.16rem; color: var(--text-primary); font: 800 0.94rem var(--font-heading); }
+.quiz-share-badge em { margin-top: 0.16rem; color: var(--text-secondary); font-size: 0.7rem; font-style: normal; }
+.quiz-share-card--locked .quiz-share-badge { filter: saturate(0.3); opacity: 0.52; }
+.quiz-share-card__lock { align-self: center; color: var(--text-muted); font-size: 0.74rem; text-align: center; }
 .quiz-review h3 { font: 800 1.25rem var(--font-heading); }
 .quiz-review article { padding: 1rem 0; border-bottom: 1px solid var(--border-color); }
 .quiz-review article:last-child { border-bottom: 0; padding-bottom: 0; }
@@ -345,6 +440,7 @@ function resetLearningHistory() {
 @media (max-width: 800px) {
   .quiz-hero, .quiz-mastery, .quiz-email-gate { grid-template-columns: 1fr; }
   .quiz-hero__metrics { width: 100%; }
+  .quiz-share__badges { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {
   .quiz-hero__metrics { grid-template-columns: 1fr; }

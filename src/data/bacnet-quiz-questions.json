@@ -9,9 +9,9 @@
       "prompt": "What is BACnet primarily designed to provide?",
       "options": [
         "Vendor-independent communication for building automation and control systems",
-        "A proprietary programming language for controllers",
-        "A replacement for all building electrical codes",
-        "A cloud-only building database"
+        "A proprietary controller programming language that requires every participating product to use the same vendor runtime and source-code format",
+        "A protocol intended to replace electrical codes, controller safety requirements, and every manufacturer installation standard",
+        "A cloud-only building database that stores telemetry but defines no interoperable device, object, service, or network behavior"
       ],
       "correctIndex": 0,
       "explanation": "BACnet standardizes how building automation devices represent information and exchange control, status, alarm, schedule, and other data across vendors."
@@ -50,8 +50,8 @@
       "difficulty": "foundation",
       "prompt": "What is special about the Device object's instance number on a BACnet internetwork?",
       "options": [
-        "It must match the final IPv4 octet",
-        "It is always zero",
+        "It must exactly match the final IPv4 octet of every interface, including interfaces that are not used for BACnet/IP communication",
+        "It is always zero because the BACnet network number, rather than the Device object, uniquely identifies each controller",
         "It may be duplicated when devices are on different subnets",
         "It should be unique across the BACnet internetwork"
       ],
@@ -92,10 +92,10 @@
       "difficulty": "foundation",
       "prompt": "What distinguishes a confirmed BACnet service from an unconfirmed service?",
       "options": [
-        "Confirmed services can only use MS/TP",
-        "Confirmed services are always broadcasts",
+        "Confirmed services are restricted to encrypted MS/TP sessions and therefore cannot return acknowledgements or protocol errors",
+        "Confirmed services are always global broadcasts that every device must process even when the request names one specific destination",
         "Confirmed services require an acknowledgement or error response",
-        "Confirmed services are always encrypted"
+        "Confirmed services are always encrypted with TLS, while unconfirmed services are required to remain unencrypted on every data link"
       ],
       "correctIndex": 2,
       "explanation": "Confirmed requests expect a response such as SimpleACK, ComplexACK, Error, Reject, or Abort. Unconfirmed requests do not."
@@ -121,9 +121,9 @@
       "prompt": "What is the main role of the BACnet NPDU?",
       "options": [
         "Carry network-layer addressing and routing information",
-        "Store trend samples",
-        "Define TLS certificates",
-        "Represent an analog value"
+        "Store time-series trend samples and permanently archive every historical value reported by every object in the device",
+        "Define, issue, renew, and revoke the complete set of TLS certificates used by every BACnet/SC node and hub on the internetwork",
+        "Represent an analog process value together with its engineering units, reliability, event state, and command-priority array"
       ],
       "correctIndex": 0,
       "explanation": "The Network Protocol Data Unit carries network-layer control and routing information around the application payload."
@@ -134,13 +134,13 @@
       "difficulty": "foundation",
       "prompt": "Which statement best describes BACnet's relationship to lower-layer networks?",
       "options": [
-        "BACnet works only on Ethernet",
+        "BACnet operates only over Ethernet cabling and requires all compliant controllers to use the same Ethernet physical interface",
         "BACnet defines application and networking behavior across multiple data-link technologies",
-        "BACnet requires every device to support every data link",
+        "BACnet requires every compliant device to implement BACnet/IP, BACnet/SC, MS/TP, ARC156, Ethernet, and all future data links simultaneously",
         "BACnet is only an IP routing protocol"
       ],
       "correctIndex": 1,
-      "explanation": "BACnet can operate over BACnet/IP, BACnet/SC, MS/TP, Ethernet, ARCNET, and other standardized link options."
+      "explanation": "BACnet keeps a consistent object, service, and network-layer model across supported data links, including BACnet/IP, BACnet/SC, MS/TP, and ARC156. ARC156 is the common BAS name for BACnet ARCNET at 156 kbps, typically carried on an EIA-485 physical layer."
     },
     {
       "id": "BAC-011",
@@ -190,9 +190,9 @@
       "difficulty": "intermediate",
       "prompt": "Why might a technician set an object's Out_Of_Service property to TRUE?",
       "options": [
-        "To enable BBMD forwarding",
+        "To enable BBMD forwarding and distribute BACnet/IP broadcasts to every remote subnet without configuring a distribution table",
         "To permit testing a simulated value without relying on the physical input",
-        "To erase the object permanently",
+        "To erase the object, its references, its historical records, and every command priority permanently from the controller database",
         "To change its Device instance"
       ],
       "correctIndex": 1,
@@ -233,9 +233,9 @@
       "prompt": "What are the two standard states of a Binary Value's Present_Value?",
       "options": [
         "Inactive and active",
-        "Normal and fault",
+        "Normal and fault, as determined by Reliability",
         "Open and closed only",
-        "Zero and one only"
+        "Zero and one, with no configurable state text"
       ],
       "correctIndex": 0,
       "explanation": "BACnet names binary present values INACTIVE and ACTIVE; display text may be customized using inactive and active text properties."
@@ -260,8 +260,8 @@
       "difficulty": "foundation",
       "prompt": "Which BACnet object is intended to represent recurring weekly operation with date-specific exceptions?",
       "options": [
-        "File",
-        "Loop",
+        "File, using a separate record for every weekly transition",
+        "Loop, using its control action to encode calendar exceptions",
         "Schedule",
         "Accumulator"
       ],
@@ -275,8 +275,8 @@
       "prompt": "Which object is primarily used to store a time-ordered history of values or events?",
       "options": [
         "Notification Class",
-        "Device",
-        "Command",
+        "Device, because Object_List stores a timestamped copy of every value",
+        "Command, because each action entry automatically becomes a historical record",
         "Trend Log"
       ],
       "correctIndex": 3,
@@ -289,8 +289,8 @@
       "prompt": "Why would a client use ReadPropertyMultiple instead of many individual ReadProperty requests?",
       "options": [
         "To read several properties more efficiently in fewer transactions",
-        "To encrypt the response",
-        "To discover IP routers",
+        "To encrypt every property response and prevent other authenticated BACnet clients from reading the returned application data",
+        "To discover every IP router, BBMD peer, foreign device, and reachable BACnet network in a single confirmed application transaction",
         "To change command priorities"
       ],
       "correctIndex": 0,
@@ -316,8 +316,8 @@
       "difficulty": "intermediate",
       "prompt": "What is the main benefit of Change of Value reporting?",
       "options": [
-        "It replaces device discovery",
-        "It assigns network numbers automatically",
+        "It replaces Who-Is, I-Am, Who-Has, I-Have, router discovery, address binding, and all other BACnet discovery mechanisms",
+        "It assigns BACnet network numbers, Device instances, and local MAC addresses automatically whenever a controller starts",
         "Clients receive updates when a relevant value changes instead of polling continuously",
         "All values are broadcast every second"
       ],
@@ -414,9 +414,9 @@
       "difficulty": "advanced",
       "prompt": "What problem does BACnet APDU segmentation solve?",
       "options": [
-        "Encrypting Device objects",
+        "Encrypting Device objects, object identifiers, property values, routing fields, and data-link headers independently inside each APDU",
         "Transferring an application message larger than the parties' supported APDU size in multiple segments",
-        "Assigning unique MS/TP MAC addresses",
+        "Assigning and negotiating unique MS/TP MAC addresses across multiple EIA-485 trunks without any installer configuration",
         "Forwarding IP broadcasts"
       ],
       "correctIndex": 1,
@@ -457,8 +457,8 @@
       "prompt": "Why does a local BACnet/IP broadcast normally fail to reach devices on another IP subnet?",
       "options": [
         "IP routers normally do not forward local subnet broadcasts",
-        "BACnet forbids more than one subnet",
-        "UDP cannot carry broadcasts",
+        "BACnet permits only one IPv4 subnet in an internetwork, so a second subnet is rejected even when BACnet routers are present",
+        "UDP cannot carry subnet-directed, local, or global broadcasts and therefore requires a separate TCP connection for every BACnet recipient",
         "Every remote device must use TCP"
       ],
       "correctIndex": 0,
@@ -484,8 +484,8 @@
       "difficulty": "intermediate",
       "prompt": "What information is maintained in a BBMD's Broadcast Distribution Table?",
       "options": [
-        "MS/TP token statistics only",
-        "TLS private keys",
+        "Detailed MS/TP token statistics, baud rates, Max_Master values, and termination measurements for every connected serial trunk",
+        "TLS private keys, full certificate chains, revocation lists, trusted root authorities, and BACnet/SC node authorization policies",
         "Other broadcast distribution peers and their addressing information",
         "All object Present_Values"
       ],
@@ -498,8 +498,8 @@
       "difficulty": "intermediate",
       "prompt": "What is stored in a BBMD's Foreign Device Table?",
       "options": [
-        "A permanent list of every Device object",
-        "Only BACnet router network numbers",
+        "A permanent inventory of every Device object, including its object list, firmware revision, and complete network address binding",
+        "Only the network numbers advertised by BACnet routers, including hop counts, next-hop addresses, path costs, and route expiration times",
         "Alarm acknowledgement history",
         "Temporary foreign-device registrations with address and remaining lifetime"
       ],
@@ -540,10 +540,10 @@
       "difficulty": "advanced",
       "prompt": "Can multiple IP subnets participate in one BACnet network number?",
       "options": [
-        "Only when all devices have the same IP address",
+        "Only when every participating controller is configured with the same IPv4 address, subnet mask, UDP port, and default gateway",
         "Only over MS/TP",
         "Yes, a BACnet/IP network can span IP subnets when broadcast management and addressing are designed correctly",
-        "No, BACnet requires one network number per IPv4 host"
+        "No; each IPv4 host must have a different BACnet network number, even when all hosts share one local IP subnet and broadcast domain"
       ],
       "correctIndex": 2,
       "explanation": "BACnet/IP can treat multiple IP subnets as one BACnet network; BBMDs or other specified mechanisms manage broadcasts across those subnets."
@@ -554,8 +554,8 @@
       "difficulty": "intermediate",
       "prompt": "What should a BBMD do with an incoming distributed broadcast intended for its local BACnet/IP network?",
       "options": [
-        "Convert it to a WriteProperty request",
-        "Assign it a new Device instance",
+        "Convert the broadcast into individual confirmed WriteProperty requests addressed to every Device instance found in its binding table",
+        "Assign the message a new Device instance, source network, destination network, command priority, and transaction identifier",
         "Drop all broadcasts unconditionally",
         "Distribute it on the local BACnet/IP network according to BVLL rules"
       ],
@@ -569,9 +569,9 @@
       "prompt": "What does a BACnet network number identify?",
       "options": [
         "A BACnet network segment in the internetwork",
-        "A single object property",
-        "A vendor organization",
-        "An alarm priority"
+        "A single object property together with its datatype, command priority, event state, and most recently reported application value",
+        "A vendor organization together with its assigned identifier, product catalog, supported profiles, and proprietary object ranges",
+        "An alarm priority that determines recipient order, acknowledgement requirements, transition handling, and notification delivery"
       ],
       "correctIndex": 0,
       "explanation": "Network numbers identify BACnet networks for network-layer routing; they do not identify individual devices."
@@ -596,8 +596,8 @@
       "difficulty": "foundation",
       "prompt": "What is the role of a BACnet router?",
       "options": [
-        "Store all trend history",
-        "Issue BTL certificates",
+        "Store all trend history from every controller and provide permanent centralized retention for alarms, schedules, and audit records",
+        "Issue BTL certificates after testing each connected product for protocol conformance, interoperability, and site-specific sequence operation",
         "Forward NPDUs between distinct BACnet networks",
         "Forward Ethernet frames between switch ports only"
       ],
@@ -610,8 +610,8 @@
       "difficulty": "intermediate",
       "prompt": "Why are duplicate BACnet network numbers a serious design error?",
       "options": [
-        "They force all properties to read zero",
-        "They change the UDP protocol to TCP",
+        "Duplicate network numbers force every object property on both networks to read zero until each controller receives a new Device instance",
+        "They change all BACnet/IP traffic from UDP to TCP and force every MS/TP or ARC156 router to negotiate a TLS session",
         "They disable TLS certificates",
         "Routers cannot unambiguously determine the destination network path"
       ],
@@ -666,9 +666,9 @@
       "difficulty": "advanced",
       "prompt": "What is the purpose of the Hop Count field in a routed BACnet NPDU?",
       "options": [
-        "Count application objects",
-        "Set MS/TP baud rate",
-        "Select a command priority",
+        "Count the application objects traversed by a request so the destination can reject messages that reference too many object instances",
+        "Set and dynamically negotiate the MS/TP baud rate, Max_Master, Max_Info_Frames, station address, and token timeout on every traversed segment",
+        "Select the command priority at every router so higher-priority writes are forwarded before lower-priority application messages",
         "Limit how many routers may forward the message"
       ],
       "correctIndex": 3,
@@ -681,8 +681,8 @@
       "prompt": "What does BACnet device address binding associate?",
       "options": [
         "A Device instance with its BACnet network and MAC address",
-        "A username with a password",
-        "A trend record with a schedule",
+        "A user account with its password, certificate chain, application permissions, and preferred BACnet command priority",
+        "A trend record with its schedule, notification class, event-enrollment algorithm, acknowledgement state, and archival destination",
         "A vendor ID with a UDP port"
       ],
       "correctIndex": 0,
@@ -694,9 +694,9 @@
       "difficulty": "intermediate",
       "prompt": "What is the key distinction between a generic IP default gateway and a BACnet router?",
       "options": [
-        "An IP gateway maintains the BACnet Priority_Array",
+        "An IP default gateway maintains every BACnet Priority_Array and resolves competing commands before forwarding ordinary IP packets",
         "The IP gateway routes IP packets; the BACnet router understands and routes BACnet NPDUs between BACnet networks",
-        "They are always identical functions",
+        "They are always identical functions because every device that forwards IP packets is required to parse and route BACnet NPDUs",
         "A BACnet router only changes analog values"
       ],
       "correctIndex": 1,
@@ -750,10 +750,10 @@
       "difficulty": "intermediate",
       "prompt": "What is MS/TP MAC address 255 used for?",
       "options": [
-        "A token timeout value",
+        "A token timeout value that determines how long a manager waits before regenerating a lost token and restarting station discovery",
         "Broadcast destination, not an assignable station address",
-        "The required router address",
-        "The first manager node"
+        "The required address of the BACnet router that owns the token and coordinates all manager and subordinate transmissions on the segment",
+        "The mandatory address of the first manager node at the physical beginning of every correctly terminated EIA-485 trunk"
       ],
       "correctIndex": 1,
       "explanation": "255 denotes broadcast when used as a destination and is not valid as a station's own address."
@@ -764,10 +764,10 @@
       "difficulty": "intermediate",
       "prompt": "What does Max_Master control on an MS/TP network?",
       "options": [
-        "The number of BBMD peers",
-        "The RS-485 voltage",
+        "The number of BBMD peers, foreign-device registrations, and routed IP subnets that an MS/TP manager is permitted to advertise",
+        "The nominal EIA-485 differential voltage, bias current, termination resistance, cable impedance, and maximum permitted trunk length",
         "The highest address considered when manager nodes search for peers",
-        "The maximum Device instance"
+        "The maximum Device instance permitted on the internetwork and the highest BACnet network number that a router may advertise"
       ],
       "correctIndex": 2,
       "explanation": "Max_Master bounds manager-node discovery. Setting it below an active manager's MAC can keep that node out of the token ring."
@@ -778,8 +778,8 @@
       "difficulty": "advanced",
       "prompt": "What does Max_Info_Frames control?",
       "options": [
-        "How many objects a Device may contain",
-        "How many IP subnets a BBMD supports",
+        "The maximum number of objects a Device may expose across its Object_List before the controller must create another Device object",
+        "How many IP subnets, BBMD peers, foreign-device registrations, and BACnet network routes a manager may maintain",
         "The largest trend buffer",
         "How many information frames a manager may send when it holds the token"
       ],
@@ -806,10 +806,10 @@
       "difficulty": "foundation",
       "prompt": "What is a likely result of two MS/TP devices sharing the same MAC address?",
       "options": [
-        "A valid redundant pair",
+        "A standards-defined redundant controller pair in which both stations intentionally share a MAC address for automatic failover",
         "Token disruption and intermittent or conflicting responses",
-        "Faster communication",
-        "Automatic address translation"
+        "Faster communication because both devices can transmit during the same token hold while recipients combine their duplicate responses",
+        "Automatic address translation in which the router assigns each conflicting station a temporary MAC address and updates Device bindings"
       ],
       "correctIndex": 1,
       "explanation": "Duplicate local MAC addresses make token ownership and replies ambiguous, commonly causing unstable communication."
@@ -849,8 +849,8 @@
       "prompt": "What is the purpose of EIA-485 biasing on an MS/TP trunk?",
       "options": [
         "Hold the idle bus in a known state when no driver is active",
-        "Increase the Device instance range",
-        "Forward broadcasts between IP subnets",
+        "Increase the permitted Device instance range so stations with large instance numbers can participate on the same serial segment",
+        "Forward all local, remote, and global BACnet/IP broadcasts between configured IPv4 subnets without requiring BBMDs",
         "Encrypt serial frames"
       ],
       "correctIndex": 0,
@@ -862,9 +862,9 @@
       "difficulty": "foundation",
       "prompt": "Why must the data-pair polarity be consistent along an MS/TP trunk?",
       "options": [
-        "It changes Device object names",
+        "Reversing the pair changes every Device object name and causes clients to rebuild their complete address-binding caches",
         "Reversed polarity can prevent receivers from decoding the differential signal",
-        "Polarity assigns network numbers",
+        "Polarity assigns BACnet network numbers, Device instances, MS/TP MAC addresses, and command priorities according to conductor color",
         "Polarity selects command priority"
       ],
       "correctIndex": 1,
@@ -876,7 +876,7 @@
       "difficulty": "intermediate",
       "prompt": "Which MS/TP node type must a BACnet router port be able to act as?",
       "options": [
-        "A BBMD foreign device only",
+        "A BBMD foreign device that registers periodically with another BBMD and receives distributed BACnet/IP broadcasts over UDP",
         "An analog input",
         "A manager node that participates in token passing",
         "A subordinate-only node"
@@ -890,8 +890,8 @@
       "difficulty": "intermediate",
       "prompt": "What is a practical advantage of assigning compact, consecutive MS/TP manager MAC addresses and tuning Max_Master?",
       "options": [
-        "It removes the need for termination",
-        "It permits duplicate Device instances",
+        "It removes the need for end-of-line termination, biasing, shield continuity, and consistent EIA-485 data-pair polarity",
+        "It permits duplicate Device instances and duplicate MAC addresses because token polling automatically disambiguates the responding station",
         "It converts MS/TP to BACnet/SC",
         "Less time polling unused addresses and faster token maintenance"
       ],
@@ -902,15 +902,15 @@
       "id": "BAC-065",
       "category": "MS/TP and physical media",
       "difficulty": "foundation",
-      "prompt": "Which BACnet data link is known for nominal 2.5 Mbit/s token passing and has been used in control systems?",
+      "prompt": "Which BAS network uses the BACnet ARCNET data link at 156 kbps, commonly carried over an EIA-485 physical layer?",
       "options": [
-        "ARCNET",
-        "MS/TP",
-        "BACnet/IPv4",
-        "PTP modem"
+        "ARC156",
+        "MS/TP configured for 156 kbps over an Ethernet physical layer",
+        "BACnet/IPv4 using UDP port 156 on an EIA-485 trunk",
+        "BACnet/SC with its WebSocket frames converted directly to EIA-485 signaling"
       ],
       "correctIndex": 0,
-      "explanation": "ARCNET is a higher-speed token-passing data link historically supported by BACnet; it is distinct from EIA-485 MS/TP."
+      "explanation": "ARC156 is the common Automated Logic BAS implementation of the BACnet ARCNET data link at 156 kbps over an EIA-485 physical layer. It remains distinct from BACnet MS/TP even though both can use EIA-485 wiring."
     },
     {
       "id": "BAC-066",
@@ -932,7 +932,7 @@
       "difficulty": "foundation",
       "prompt": "What logical topology does a typical BACnet/SC network use?",
       "options": [
-        "Only peer-to-peer UDP broadcast",
+        "A peer-to-peer UDP broadcast mesh in which every node must maintain a direct unencrypted connection to every other node",
         "A Modbus register tree",
         "Hub-and-spoke, with nodes connecting to a hub function",
         "An electrical EIA-485 daisy chain"
@@ -946,7 +946,7 @@
       "difficulty": "intermediate",
       "prompt": "What is the purpose of a BACnet/SC failover hub?",
       "options": [
-        "Replace every BACnet router",
+        "Replace every BACnet router, BBMD, and application gateway in the internetwork whenever the primary hub is unavailable",
         "Assign MS/TP MAC addresses",
         "Store trend records",
         "Provide an alternate hub connection if the primary hub is unavailable"
@@ -961,8 +961,8 @@
       "prompt": "May BACnet/SC nodes establish direct connections for unicast traffic?",
       "options": [
         "Yes, direct connections are optional and can bypass the hub for unicast",
-        "No, every frame must always pass through two BBMDs",
-        "Only over an MS/TP cable",
+        "No; every unicast frame must traverse two BBMDs and both primary and failover hubs before reaching the destination node",
+        "Only over a dedicated MS/TP cable after the SC hub converts the TLS WebSocket connection into token-passing EIA-485 frames",
         "Only without TLS"
       ],
       "correctIndex": 0,
@@ -974,7 +974,7 @@
       "difficulty": "foundation",
       "prompt": "What is a central operational role of certificates in BACnet/SC?",
       "options": [
-        "Replace Device instances",
+        "Replace Device instances, BACnet network numbers, and local MAC addresses with certificate serial numbers at every protocol layer",
         "Establish trusted TLS identities for network participation",
         "Set analog engineering units",
         "Choose MS/TP baud rate"
@@ -1002,7 +1002,7 @@
       "difficulty": "advanced",
       "prompt": "Does admitting a device to a certificate-trusted BACnet/SC network automatically authorize every protected application operation?",
       "options": [
-        "Yes, every admitted device must always have unlimited write access",
+        "Yes; admission by a trusted certificate grants unrestricted read, write, reinitialize, and device-control authority throughout the internetwork",
         "Yes, TLS removes all need for policy",
         "No, because BACnet/SC has no identity at all",
         "No, trusted transport participation and application authorization are separate concerns"
@@ -1017,7 +1017,7 @@
       "prompt": "Why can BACnet/SC be easier to accommodate through modern firewalls than broadcast-oriented BACnet/IP?",
       "options": [
         "It uses managed, persistent secure connections instead of relying on routed IP broadcasts",
-        "It disables all routing",
+        "It disables BACnet routing and sends no traffic through managed firewall connections after the initial certificate exchange completes",
         "It sends no network traffic",
         "It uses analog wiring"
       ],
@@ -1030,7 +1030,7 @@
       "difficulty": "intermediate",
       "prompt": "What happens to the BACnet object and service model when BACnet/SC is used?",
       "options": [
-        "Only Device objects remain",
+        "Only Device objects remain; every other standard object and service is replaced by WebSocket-specific resources and operations",
         "It remains the BACnet application model; BACnet/SC changes the secure data-link transport",
         "It is replaced by Modbus objects",
         "All objects become proprietary"
@@ -1044,7 +1044,7 @@
       "difficulty": "intermediate",
       "prompt": "Which statement correctly compares BACnet/SC with placing BACnet/IP inside a generic VPN?",
       "options": [
-        "A VPN changes every BACnet Device instance",
+        "A generic VPN rewrites every BACnet Device instance, network number, object identifier, and command priority as packets cross the tunnel",
         "BACnet/SC cannot use IP infrastructure",
         "BACnet/SC is standardized within BACnet and defines BACnet-aware secure connectivity; a VPN is a separate network overlay",
         "They are identical protocols"
@@ -1058,7 +1058,7 @@
       "difficulty": "foundation",
       "prompt": "What does an object's Event_State property indicate?",
       "options": [
-        "Its IPv4 subnet mask",
+        "Its complete IPv4 configuration, including subnet mask, default gateway, DNS servers, UDP port, and current BBMD registration lifetime",
         "Its MS/TP baud rate",
         "Its vendor ID",
         "Its current event condition such as normal, fault, offnormal, high limit, or low limit"
@@ -1073,7 +1073,7 @@
       "prompt": "What does Ack_Required indicate in BACnet event reporting?",
       "options": [
         "Whether a transition requires acknowledgement according to the event configuration",
-        "Whether every ReadProperty needs a password",
+        "Whether every ReadProperty request requires a password, certificate challenge, operator acknowledgement, and a confirmed event response",
         "Whether the device supports IP",
         "Whether a trend buffer is full"
       ],
@@ -1086,7 +1086,7 @@
       "difficulty": "intermediate",
       "prompt": "What is the main purpose of a Notification Class object?",
       "options": [
-        "Configure EIA-485 termination",
+        "Configure EIA-485 bias, end-of-line termination, data-pair polarity, trunk length, baud rate, and repeater placement for serial networks",
         "Define event priorities, acknowledgement requirements, and recipient routing",
         "Store analog Present_Value history",
         "Route NPDUs between networks"
@@ -1100,7 +1100,7 @@
       "difficulty": "advanced",
       "prompt": "What is an Event Enrollment object used for?",
       "options": [
-        "Enroll a node in an MS/TP token ring",
+        "Enroll a station in an MS/TP token ring while assigning its MAC address, Max_Master value, baud rate, and token-retry timing",
         "Create a TLS certificate",
         "Apply an event algorithm to monitor a referenced value, often when event detection is not intrinsic to that object",
         "Register a foreign BACnet/IP device"
@@ -1116,7 +1116,7 @@
       "options": [
         "A BDT peer only",
         "A TLS private key",
-        "An entire controller program",
+        "The entire controller program, object database, certificate store, routing table, and current BBMD configuration at the sample time",
         "A timestamp plus a logged value or status/error indication"
       ],
       "correctIndex": 3,
@@ -1129,7 +1129,7 @@
       "prompt": "What does a Trend Log's Stop_When_Full setting control?",
       "options": [
         "Whether logging stops at capacity instead of overwriting the oldest records",
-        "Whether COV subscriptions expire",
+        "Whether all COV subscriptions expire immediately whenever the trend buffer reaches its configured record capacity",
         "Whether the Device reboots",
         "Whether BBMD forwarding stops"
       ],
@@ -1142,7 +1142,7 @@
       "difficulty": "foundation",
       "prompt": "Why is reliable time synchronization important in a BACnet system?",
       "options": [
-        "It changes RS-485 polarity",
+        "It automatically corrects reversed EIA-485 polarity and recalculates termination resistance based on the current device count",
         "It makes alarms, trends, schedules, and audit sequences comparable across devices",
         "It assigns network numbers",
         "It eliminates all broadcasts"
@@ -1156,7 +1156,7 @@
       "difficulty": "intermediate",
       "prompt": "A schedule consistently executes one hour early after a seasonal clock change. What should be checked first?",
       "options": [
-        "The BBMD BDT only",
+        "Only the BBMD Broadcast Distribution Table, because seasonal time changes are calculated exclusively by broadcast-distribution peers",
         "The object Vendor_Identifier",
         "Device time, UTC offset, daylight-saving configuration, and time-sync source",
         "MS/TP termination resistance only"
@@ -1170,7 +1170,7 @@
       "difficulty": "foundation",
       "prompt": "What does a Calendar object represent?",
       "options": [
-        "A list of IP routers",
+        "A complete inventory of IP routers, their reachable BACnet networks, hop counts, BBMD peers, and foreign-device registrations",
         "A command priority array",
         "A table of vendor IDs",
         "A reusable set of dates or date ranges for exception logic"
@@ -1185,7 +1185,7 @@
       "prompt": "What is the difference between intrinsic and algorithmic event detection?",
       "options": [
         "Intrinsic detection is built into the monitored object; algorithmic detection is represented separately, commonly with Event Enrollment",
-        "Intrinsic events use IP and algorithmic events use MS/TP",
+        "Intrinsic events are available only on BACnet/IP objects, while algorithmic events are available only on MS/TP and ARC156 devices regardless of object type",
         "Only algorithmic events have timestamps",
         "There is no difference"
       ],
@@ -1198,7 +1198,7 @@
       "difficulty": "foundation",
       "prompt": "What is a BACnet PICS?",
       "options": [
-        "A cloud subscription",
+        "A mandatory cloud subscription that stores live object values, trend records, alarm recipients, and controller credentials for a BACnet product",
         "A Protocol Implementation Conformance Statement listing a product's BACnet capabilities",
         "A packet-capture image",
         "A wiring termination standard"
@@ -1213,7 +1213,7 @@
       "prompt": "What does a BACnet Interoperability Building Block describe?",
       "options": [
         "An IPv4 subnet",
-        "A TLS cipher suite only",
+        "A required TLS cipher suite, certificate format, private-key storage mechanism, and firewall policy used by every BACnet data link",
         "A defined interoperable capability composed of one or more services and related requirements",
         "A physical enclosure for a controller"
       ],
@@ -1226,7 +1226,7 @@
       "difficulty": "foundation",
       "prompt": "What does BTL certification primarily indicate?",
       "options": [
-        "The product will satisfy every possible sequence of operation",
+        "The product is guaranteed to satisfy every possible sequence of operation, control-loop requirement, and site-specific acceptance test",
         "The product requires no commissioning",
         "The product is made by ASHRAE",
         "The product was independently tested against applicable BACnet conformance and interoperability requirements"
@@ -1269,7 +1269,7 @@
       "prompt": "What does a device's Protocol_Revision communicate?",
       "options": [
         "Its IP subnet prefix",
-        "Its BTL certificate expiration",
+        "The expiration date of its BTL certificate together with the laboratory, test suite, and technician that approved the listing",
         "The BACnet protocol revision implemented by the device",
         "Its firmware build date only"
       ],
@@ -1284,7 +1284,7 @@
       "options": [
         "Assign a unique IP address",
         "Replace the PICS entirely",
-        "Define the building's mechanical schedule",
+        "Define the building mechanical schedule, occupied modes, alarm routing, trend intervals, and every sequence of operation for a project",
         "Define a recognized set of minimum BACnet capabilities for a device role"
       ],
       "correctIndex": 3,
@@ -1297,7 +1297,7 @@
       "prompt": "Does a BTL listing guarantee that two products implement the owner's sequence of operation correctly?",
       "options": [
         "No, it supports protocol conformance and interoperability but does not replace application design and functional testing",
-        "Yes, it guarantees every project sequence",
+        "Yes; listing guarantees every owner sequence, controller program, mechanical response, alarm route, and site-specific functional test without commissioning",
         "Yes, if both use UDP 47808",
         "No, because BTL tests only electrical safety"
       ],
@@ -1312,7 +1312,7 @@
       "options": [
         "Only on MS/TP",
         "Yes, within assigned vendor-specific ranges and with adequate documentation",
-        "No, the standard forbids every extension",
+        "No; the standard forbids all vendor extensions, private properties, proprietary object types, and product-specific capability documentation",
         "Only if it abandons standard objects"
       ],
       "correctIndex": 1,
@@ -1325,7 +1325,7 @@
       "prompt": "What is the best starting point when specifying required BACnet interoperability?",
       "options": [
         "Choose a UDP port and omit all application requirements",
-        "Assume every BACnet device supports every service",
+        "Assume every product labeled BACnet supports every standard service, object type, data link, device profile, and optional interoperability feature",
         "State required functional capabilities, applicable BIBBs/profiles, data links, objects, and project acceptance tests",
         "Require only that the word BACnet appear on the datasheet"
       ],
@@ -1339,7 +1339,7 @@
       "prompt": "A workstation discovers a device by I-Am but every ReadProperty request times out. What is a strong first hypothesis?",
       "options": [
         "The device has no Device object",
-        "Who-Is automatically proves all unicast paths",
+        "Who-Is and I-Am automatically prove every forward and return unicast path, firewall rule, router binding, and advertised address is usable",
         "The trend buffer is full",
         "Discovery reached the workstation, but the advertised return address, routing, firewall, or unicast path is unusable"
       ],
@@ -1353,7 +1353,7 @@
       "prompt": "Two controllers use the same Device instance. What symptom is most likely?",
       "options": [
         "Ambiguous discovery and address binding, with communication switching between devices",
-        "Improved redundancy with no side effects",
+        "Standards-defined controller clustering with automatic failover, synchronized Priority_Arrays, and no effect on discovery or address binding",
         "Automatic device clustering",
         "Only a cosmetic name conflict"
       ],
@@ -1366,7 +1366,7 @@
       "difficulty": "intermediate",
       "prompt": "A remote laptop registered as a foreign device stops receiving broadcasts after several minutes. What should be checked?",
       "options": [
-        "MS/TP Max_Info_Frames only",
+        "Only MS/TP Max_Info_Frames, token-retry timing, serial termination, and manager MAC addressing on the nearest unrelated EIA-485 trunk",
         "Registration renewal, time-to-live, BBMD FDT state, and return-path reachability",
         "Analog input Units",
         "Schedule exception dates only"
@@ -1381,7 +1381,7 @@
       "prompt": "A commandable output ignores a new write even though the service succeeds. What should be inspected first?",
       "options": [
         "The Device Vendor_Identifier",
-        "The MS/TP termination at an unrelated trunk",
+        "The termination, bias voltage, baud rate, polarity, and Max_Master configuration of an unrelated MS/TP trunk elsewhere in the building",
         "Priority_Array for a higher-priority active command and the priority used by the new write",
         "The BBMD BDT"
       ],
@@ -1396,7 +1396,7 @@
       "options": [
         "Increase every trend buffer",
         "Change all Device instances",
-        "Disable all confirmed services",
+        "Disable every confirmed service, COV subscription, trend log, event notification, and router advertisement across the complete BACnet internetwork",
         "Check BDT topology for duplicate, reciprocal-loop, mask, or addressing errors and inspect captured BVLL forwarding"
       ],
       "correctIndex": 3,

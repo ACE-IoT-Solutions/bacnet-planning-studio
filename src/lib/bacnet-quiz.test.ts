@@ -27,6 +27,32 @@ describe('BACnet competency question bank', () => {
     expect(Math.max(...answerPositionCounts) - Math.min(...answerPositionCounts)).toBeLessThanOrEqual(5);
   });
 
+  it('does not make answer length a reliable shortcut', () => {
+    const correctLengthRanks = [0, 1, 2, 3].map(shorterDistractorCount => bacnetQuizQuestions.filter(question => {
+      const correctLength = question.options[question.correctIndex].length;
+      return question.options.filter((option, index) => index !== question.correctIndex && option.length < correctLength).length === shorterDistractorCount;
+    }).length);
+    const correctIsLongest = bacnetQuizQuestions.filter(question => {
+      const correctLength = question.options[question.correctIndex].length;
+      const longestDistractor = Math.max(...question.options
+        .filter((_, index) => index !== question.correctIndex)
+        .map(option => option.length));
+      return correctLength >= longestDistractor;
+    });
+    const conspicuousCorrectOutliers = bacnetQuizQuestions.filter(question => {
+      const correctLength = question.options[question.correctIndex].length;
+      const longestDistractor = Math.max(...question.options
+        .filter((_, index) => index !== question.correctIndex)
+        .map(option => option.length));
+      return correctLength - longestDistractor >= 20;
+    });
+
+    expect(Math.min(...correctLengthRanks) / bacnetQuizQuestions.length).toBeGreaterThanOrEqual(0.15);
+    expect(Math.max(...correctLengthRanks) / bacnetQuizQuestions.length).toBeLessThanOrEqual(0.4);
+    expect(correctIsLongest.length / bacnetQuizQuestions.length).toBeLessThanOrEqual(0.25);
+    expect(conspicuousCorrectOutliers).toEqual([]);
+  });
+
   it('selects 35 questions that have not yet been answered correctly', () => {
     const progress = emptyQuizProgress();
     for (const question of bacnetQuizQuestions.slice(0, 40)) {
