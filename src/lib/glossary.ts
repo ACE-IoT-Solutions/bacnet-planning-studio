@@ -166,6 +166,22 @@ export const glossaryEntries: GlossaryEntry[] = [
     related: ['ip-router', 'network-number', 'npdu']
   },
   {
+    id: 'bacnet-ethernet',
+    term: 'BACnet/Ethernet',
+    category: 'BACnet networking',
+    definition: 'The native BACnet datalink using ISO 8802-2 (IEEE 802.2) Type 1 logical-link control over ISO 8802-3 (IEEE 802.3) Ethernet. It carries the NPDU directly without IP, UDP, or BVLL, supports a 1497-octet NPDU, and uses FF:FF:FF:FF:FF:FF for local broadcasts.',
+    aliases: ['native BACnet/Ethernet', 'ISO 8802-2', 'ISO 8802-3', 'LLC Type 1'],
+    related: ['llc-sap', 'npdu', 'bacnet-ip', 'ethernet-frame']
+  },
+  {
+    id: 'ethernet-bridge',
+    term: 'Transparent Ethernet bridge',
+    category: 'BACnet networking',
+    definition: 'A device that forwards Ethernet frames between segments using MAC addresses. Bridged segments can form one native BACnet/Ethernet network with one BACnet network number; BACnet routers connect different BACnet networks.',
+    aliases: ['transparent bridge', 'Ethernet bridge'],
+    related: ['bacnet-ethernet', 'bacnet-router', 'network-number']
+  },
+  {
     id: 'bacnet-ip',
     term: 'BACnet/IP',
     abbreviation: 'B/IP',
@@ -179,7 +195,8 @@ export const glossaryEntries: GlossaryEntry[] = [
     term: 'BACnet Virtual Link Layer',
     abbreviation: 'BVLL',
     category: 'BACnet networking',
-    definition: 'The adaptation layer used by BACnet/IP to represent local unicast, broadcast, forwarded broadcast, foreign-device registration, and related management messages over UDP/IP.',
+    definition: 'The adaptation layer used by BACnet/IP to represent local unicast, broadcast, forwarded broadcast, foreign-device registration, and related management messages over UDP/IP. Classic BACnet/IPv4 uses BVLC Type 0x81; Original-Unicast-NPDU is function 0x0A and Original-Broadcast-NPDU is 0x0B.',
+    aliases: ['BVLC', 'BVLC Type', 'BVLC function', 'Original-Unicast-NPDU', 'Original-Broadcast-NPDU'],
     related: ['bacnet-ip', 'bbmd', 'udp']
   },
   {
@@ -193,12 +210,12 @@ export const glossaryEntries: GlossaryEntry[] = [
   },
   {
     id: 'mstp',
-    term: 'Master-Slave/Token-Passing',
+    term: 'MS/TP',
     abbreviation: 'MS/TP',
     category: 'BACnet networking',
-    definition: 'A BACnet datalink designed primarily for EIA-485 twisted-pair networks. Token passing coordinates which master node may transmit.',
-    aliases: ['BACnet MS/TP'],
-    related: ['datalink', 'mac-address', 'bacnet-router']
+    definition: 'A BACnet datalink designed primarily for EIA-485 twisted-pair networks. A token coordinates which manager node may transmit; older editions expanded the acronym as Master-Slave/Token-Passing, while current terminology uses manager and subordinate.',
+    aliases: ['BACnet MS/TP', 'Master-Slave/Token-Passing', 'Manager-Subordinate/Token-Passing'],
+    related: ['datalink', 'mac-address', 'bacnet-router', 'token-passing']
   },
   {
     id: 'arcnet',
@@ -277,7 +294,7 @@ export const glossaryEntries: GlossaryEntry[] = [
     abbreviation: 'UDP',
     category: 'IP networking',
     definition: 'A connectionless IP transport protocol. BACnet/IP uses UDP and distinguishes logical endpoints by IP address and UDP port.',
-    related: ['bacnet-ip', 'port']
+    related: ['bacnet-ip', 'port', 'udp-checksum']
   },
   {
     id: 'port',
@@ -382,7 +399,7 @@ export const glossaryEntries: GlossaryEntry[] = [
     id: 'mstp-segment', term: 'MS/TP segment', category: 'BACnet networking', definition: 'One continuous EIA-485 bus between repeaters or routers, with an ordered set of nodes, two physical ends, a cable-length budget, and a unit-load limit.', related: ['mstp', 'eia-485', 'repeater']
   },
   {
-    id: 'arc156', term: 'BACnet ARC156', category: 'BACnet networking', definition: 'Automated Logic and Carrier’s 156.25 kbps BACnet ARCNET implementation over shielded EIA-485 wiring. Product guides specify daisy-chain wiring and commonly limit one segment to 610 metres (2000 feet) or 32 nodes.', aliases: ['ARC156', 'ALC ARCNET'], related: ['arcnet', 'eia-485', 'repeater']
+    id: 'arc156', term: 'BACnet ARC156', category: 'BACnet networking', definition: 'Automated Logic and Carrier’s 156.25 kbps BACnet ARCNET implementation over shielded EIA-485 wiring. Its ARCNET coprocessors maintain a logical loop of participating controllers, allow one data packet per token, and rebuild the loop through network reconfiguration.', aliases: ['ARC156', 'ALC ARCNET', 'ARCNET coprocessor', 'logical token loop'], related: ['arcnet', 'eia-485', 'repeater', 'arc156-reconfiguration']
   },
   {
     id: 'repeater', term: 'Repeater', category: 'BACnet networking', definition: 'A physical-layer device that regenerates a signal and divides wiring into separate electrical segments. It does not perform BACnet network-layer routing.', related: ['eia-485', 'mstp-segment', 'bacnet-router']
@@ -421,7 +438,121 @@ export const glossaryEntries: GlossaryEntry[] = [
     id: 'media-converter', term: 'Media converter', category: 'IP networking', definition: 'A device that converts a physical signal between media, such as copper Ethernet and fiber, without necessarily performing IP or BACnet routing.', related: ['sfp', 'repeater']
   },
   {
-    id: 'unit-load', term: 'Unit load', category: 'BACnet networking', definition: 'The standardized electrical loading a transceiver places on an EIA-485 bus. Modern fractional-unit-load devices may permit more physical transceivers, subject to the applicable device and installation guidance.', related: ['eia-485', 'mstp-segment']
+    id: 'unit-load', term: 'Unit load', category: 'BACnet networking', definition: 'The standardized electrical loading a transceiver places on an EIA-485 bus. One unit load corresponds to a 12 kΩ minimum receiver input resistance at the 12 V test point; fractional-unit-load receivers place proportionally less load on the bus.', aliases: ['UL', 'fractional unit load', 'receiver input resistance'], related: ['eia-485', 'mstp-segment']
+  },
+  {
+    id: 'differential-voltage', term: 'Differential voltage', category: 'BACnet networking', definition: 'The voltage difference between the non-inverting and inverting conductors of a balanced EIA-485 pair. A conventional receiver guarantees opposite states at +200 mV or greater and −200 mV or less.', aliases: ['VOD', 'VID', 'differential input'], related: ['eia-485', 'common-mode-voltage', 'receiver-threshold']
+  },
+  {
+    id: 'common-mode-voltage', term: 'Common-mode voltage', category: 'BACnet networking', definition: 'The average voltage of both EIA-485 signal conductors relative to the receiver reference. The standard receiver range is −7 V through +12 V even when the differential voltage is otherwise adequate.', aliases: ['VCM', 'common mode'], related: ['eia-485', 'differential-voltage']
+  },
+  {
+    id: 'receiver-threshold', term: 'EIA-485 receiver threshold', category: 'BACnet networking', definition: 'The differential-input boundary a conventional EIA-485 receiver uses to guarantee an output state. Inputs between −200 mV and +200 mV are not assigned a guaranteed state by the base threshold specification.', aliases: ['±200 mV threshold', 'receiver sensitivity'], related: ['differential-voltage', 'network-bias']
+  },
+  {
+    id: 'loaded-driver-test', term: 'Loaded-driver test', category: 'BACnet networking', definition: 'An EIA-485 compliance measurement of differential driver output under a heavy standard test load of approximately 54 Ω. The loaded differential output is required to be at least 1.5 V and no more than 5 V.', aliases: ['loaded-driver compliance test', '54 ohm test load'], related: ['eia-485', 'differential-voltage', 'termination']
+  },
+  {
+    id: 'driver-enable', term: 'Driver enable', category: 'BACnet networking', definition: 'The transceiver control that connects or disconnects an EIA-485 driver from the shared pair. When deasserted, the driver is high impedance, or tri-stated, so another station can transmit.', aliases: ['DE', 'tri-state', 'high impedance'], related: ['eia-485', 'half-duplex']
+  },
+  {
+    id: 'half-duplex', term: 'Half-duplex', category: 'BACnet networking', definition: 'Communication in both directions over a shared medium, but only one direction or transmitter at a time. Two-wire MS/TP uses half-duplex EIA-485, so only one station should actively drive the pair.', related: ['eia-485', 'driver-enable', 'mstp']
+  },
+  {
+    id: 'token-passing', term: 'Token passing', category: 'BACnet networking', definition: 'A deterministic medium-access method in which possession of a logical token grants a manager permission to transmit. An MS/TP manager normally passes the token directly to its known successor.', aliases: ['token rotation', 'token ring'], related: ['mstp', 'max-info-frames', 'poll-for-master']
+  },
+  {
+    id: 'mstp-station-variables', term: 'MS/TP station variables', category: 'BACnet networking', definition: 'Names used by the MS/TP state machine: This Station (TS) is the local MAC address, Next Station (NS) is the known token successor, and Poll Station (PS) is the address currently examined by Poll For Master maintenance.', aliases: ['This Station', 'TS', 'Next Station', 'NS', 'Poll Station', 'PS'], related: ['mstp', 'poll-for-master', 'mac-address']
+  },
+  {
+    id: 'max-info-frames', term: 'Max_Info_Frames', category: 'BACnet networking', definition: 'The maximum number of information frames an MS/TP manager may send during one token possession before it must pass the token. Larger values can allocate more bandwidth to that manager while lengthening other managers’ wait.', aliases: ['Nmax_info_frames', 'Max Info Frames'], related: ['mstp', 'token-passing']
+  },
+  {
+    id: 'max-master', term: 'Max_Master / Max_Manager', category: 'BACnet networking', definition: 'The highest address allowed for manager nodes on an MS/TP network. Setting it to the highest manager address actually used avoids searching unused higher addresses, but setting it too low excludes valid managers.', aliases: ['Max_Master', 'Max_Manager', 'Nmax_master'], related: ['mstp', 'poll-for-master', 'mac-address']
+  },
+  {
+    id: 'poll-for-master', term: 'Poll For Master', category: 'BACnet networking', definition: 'An MS/TP maintenance frame, now understood as Poll For Manager, used to discover a manager at a candidate address and maintain the logical token ring. Each manager advances a Poll Station through unused addresses periodically.', aliases: ['Poll For Manager', 'PFM', 'Poll Station'], related: ['mstp', 'npoll', 'max-master', 'token-passing']
+  },
+  {
+    id: 'reply-postponed', term: 'Reply Postponed', category: 'BACnet networking', definition: 'An MS/TP frame indicating that a station received a request that expects a reply but cannot produce the response within Treply_delay. It satisfies the immediate datalink timing while the response is deferred.', related: ['mstp', 'treply-delay', 'treply-timeout']
+  },
+  {
+    id: 'npoll', term: 'Npoll', category: 'BACnet networking', definition: 'The MS/TP maintenance count that causes a manager to begin Poll For Master processing after 50 token uses. Once maintenance begins, the manager advances through candidate addresses on successive token possessions until it reaches its known successor, then resets the count.', aliases: ['poll interval'], related: ['poll-for-master', 'token-passing']
+  },
+  {
+    id: 'nretry-token', term: 'Nretry_token', category: 'BACnet networking', definition: 'The number of token retransmission retries permitted before an MS/TP manager assumes its known successor failed and begins searching for a replacement. Its standardized value is one retry.', aliases: ['token retry count'], related: ['token-passing', 'tusage-timeout']
+  },
+  {
+    id: 'tno-token', term: 'Tno_token', category: 'BACnet networking', definition: 'The 500 ms interval without qualifying receive activity after which an MS/TP manager assumes the token has been lost and enters token regeneration processing.', aliases: ['no-token timeout'], related: ['token-passing', 'tslot']
+  },
+  {
+    id: 'tslot', term: 'Tslot', category: 'BACnet networking', definition: 'The 10 ms address-based slot used during MS/TP lost-token recovery. A fixed-address manager’s token-generation window begins at Tno_token plus Tslot multiplied by its MAC address.', aliases: ['token-generation slot'], related: ['tno-token', 'mac-address']
+  },
+  {
+    id: 'tusage-delay', term: 'Tusage_delay', category: 'BACnet networking', definition: 'The maximum 15 ms an MS/TP node may wait after receiving a Token or Poll For Master frame before beginning its transmission.', aliases: ['token-use delay'], related: ['token-passing', 'tusage-timeout']
+  },
+  {
+    id: 'tusage-timeout', term: 'Tusage_timeout', category: 'BACnet networking', definition: 'The wait for a remote station to begin using a passed token or replying to Poll For Master. It is at least 20 ms and may be increased by an implementation, but not beyond 35 ms.', aliases: ['token-use timeout'], related: ['token-passing', 'poll-for-master', 'nretry-token']
+  },
+  {
+    id: 'treply-delay', term: 'Treply_delay', category: 'BACnet networking', definition: 'The maximum 250 ms after receiving a request that expects a reply in which an MS/TP station must begin the reply or send Reply Postponed.', aliases: ['reply delay'], related: ['reply-postponed', 'treply-timeout']
+  },
+  {
+    id: 'treply-timeout', term: 'Treply_timeout', category: 'BACnet networking', definition: 'The wait for a remote station to begin replying to a confirmed MS/TP request. It is at least 255 ms and may be increased by an implementation, but not beyond 300 ms.', aliases: ['reply timeout'], related: ['treply-delay', 'reply-postponed']
+  },
+  {
+    id: 'tturnaround', term: 'Tturnaround', category: 'BACnet networking', definition: 'The minimum 40 bit-time interval after the final stop bit of a received MS/TP frame before a node may enable its EIA-485 driver.', aliases: ['turnaround time'], related: ['mstp', 'driver-enable']
+  },
+  {
+    id: 'bit-time', term: 'Bit time', category: 'BACnet networking', definition: 'The duration of one serial bit at the configured baud rate, equal to one divided by the bits per second. Expressing MS/TP intervals in bit times makes their wall-clock duration scale with baud rate.', aliases: ['bit-time', 'bit period'], related: ['mstp', 'tturnaround', 'tframe-abort', 'tframe-gap']
+  },
+  {
+    id: 'arc156-reconfiguration', term: 'ARC156 network reconfiguration', category: 'BACnet networking', definition: 'The process that rebuilds the ARC156 logical token loop so newly available or previously dropped controllers can participate. Automated Logic guidance describes about three seconds to reconfigure and initiation by a controller that has not received the token for about 13 seconds.', aliases: ['ARC156 reconfiguration', 'token-loop reconfiguration'], related: ['arc156', 'token-passing']
+  },
+  {
+    id: 'rep485', term: 'REP485', category: 'BACnet networking', definition: 'An Automated Logic EIA-485 repeater used to begin a new ARC156 electrical segment. It counts as the last device of one segment and first device of the next, and an ARC156 packet path may cross no more than four repeaters.', aliases: ['ARC156 repeater'], related: ['arc156', 'repeater', 'mstp-segment']
+  },
+  {
+    id: 'ipv4-fragmentation', term: 'IPv4 fragmentation', category: 'IP networking', definition: 'Division of an IPv4 datagram to fit a smaller next-hop MTU. Fragment Offset is measured in eight-octet units, MF indicates more fragments, and DF prohibits fragmentation even when the packet must then be discarded.', aliases: ['Fragment Offset', 'DF', 'Don’t Fragment', 'MF', 'More Fragments'], related: ['mtu', 'icmp', 'ttl']
+  },
+  {
+    id: 'ttl', term: 'Time To Live', abbreviation: 'TTL', category: 'IP networking', definition: 'An eight-bit IPv4 header field that bounds a datagram’s lifetime and routing loops. Each forwarding module decreases it by at least one, and a datagram is destroyed when TTL reaches zero.', related: ['ipv4-fragmentation', 'ip-router', 'icmp']
+  },
+  {
+    id: 'mtu', term: 'Maximum Transmission Unit', abbreviation: 'MTU', category: 'IP networking', definition: 'The largest network-layer packet a link carries without fragmentation. Conventional Ethernet presents a 1500-octet MTU to IPv4 even though Ethernet headers, tags, and frame check sequence add bytes on the wire.', aliases: ['path MTU'], related: ['ipv4-fragmentation', 'ethernet-frame']
+  },
+  {
+    id: 'udp-checksum', term: 'UDP checksum', category: 'IP networking', definition: 'A 16-bit one’s-complement checksum over the UDP header and data plus a pseudo-header containing IP source, IP destination, protocol, and UDP length. In IPv4, a transmitted zero checksum means no UDP checksum was generated.', aliases: ['UDP pseudo-header', 'zero UDP checksum'], related: ['udp', 'bacnet-ip']
+  },
+  {
+    id: 'icmp', term: 'Internet Control Message Protocol', abbreviation: 'ICMP', category: 'IP networking', definition: 'The IP control protocol used to report conditions such as destination unreachable, TTL expiration, and an IPv4 packet that needs fragmentation while DF is set.', related: ['ipv4-fragmentation', 'ttl', 'mtu']
+  },
+  {
+    id: 'directed-broadcast', term: 'IPv4 directed broadcast', category: 'IP networking', definition: 'An IPv4 destination that identifies every host on a remote subnet by using that subnet’s prefix with an all-ones host portion. Router forwarding of directed broadcasts is disabled by default under RFC 2644.', aliases: ['subnet-directed broadcast'], related: ['broadcast', 'ip-router', 'bbmd']
+  },
+  {
+    id: 'ethernet-frame', term: 'Ethernet frame', category: 'IP networking', definition: 'A link-layer transmission containing destination and source MAC addresses, type or length, a data field, and a frame check sequence. The data field is padded to at least 46 octets; standard untagged and singly tagged maximum MAC frame sizes are 1518 and 1522 octets.', aliases: ['MAC frame', 'Ethernet padding', 'FCS', 'frame check sequence'], related: ['mac-address', 'ethertype', 'vlan-tag', 'mtu']
+  },
+  {
+    id: 'ethertype', term: 'EtherType', category: 'IP networking', definition: 'The two-octet Ethernet II field identifying the payload protocol, such as 0x0800 for IPv4, 0x0806 for ARP, and 0x86DD for IPv6. Values above 1500 distinguish EtherType from an IEEE 802.3 payload-length value.', aliases: ['Ethernet Type field'], related: ['ethernet-frame', 'ethernet-ii', 'arp']
+  },
+  {
+    id: 'ethernet-ii', term: 'Ethernet II encapsulation', category: 'IP networking', definition: 'Ethernet framing that uses an EtherType after the source MAC address to identify the payload protocol. It contrasts with IEEE 802.3 length framing followed by logical-link control fields.', aliases: ['DIX Ethernet', 'Ethernet Version 2'], related: ['ethernet-frame', 'ethertype', 'llc-sap']
+  },
+  {
+    id: 'vlan-tag', term: 'IEEE 802.1Q VLAN tag', category: 'IP networking', definition: 'A four-octet field inserted after the source MAC address. A customer tag normally uses TPID 0x8100, followed by Tag Control Information containing three PCP bits, one DEI bit, and twelve VID bits.', aliases: ['802.1Q tag', 'TPID', 'Tag Protocol Identifier', 'TCI', 'Tag Control Information', 'PCP', 'Priority Code Point', 'DEI', 'Drop Eligible Indicator', 'VID', 'VLAN Identifier'], related: ['vlan', 'ethernet-frame', 'trunk-port']
+  },
+  {
+    id: 'llc-sap', term: 'BACnet LLC service access point', category: 'BACnet networking', definition: 'The IEEE 802.2 logical-link identifiers used by BACnet/Ethernet and BACnet ARCNET. BACnet uses 0x82 for both the destination service access point (DSAP) and source service access point (SSAP); the LLC control field is separate.', aliases: ['DSAP', 'SSAP', 'LLC', '0x82'], related: ['ethernet-ii', 'datalink', 'arcnet']
+  },
+  {
+    id: 'arp', term: 'Address Resolution Protocol', abbreviation: 'ARP', category: 'IP networking', definition: 'The local-link protocol that resolves an IPv4 next-hop address to the 48-bit Ethernet hardware address required to transmit a frame on the local network.', aliases: ['ARP cache', 'ARP table'], related: ['mac-address', 'subnet', 'ethertype']
+  },
+  {
+    id: 'tframe-abort', term: 'Tframe_abort', category: 'BACnet networking', definition: 'The receive timeout for an interrupted MS/TP frame. It is at least 60 bit times; implementations may use a larger value that does not exceed 100 ms.', aliases: ['frame-abort timeout'], related: ['mstp', 'tframe-gap']
+  },
+  {
+    id: 'tframe-gap', term: 'Tframe_gap', category: 'BACnet networking', definition: 'The maximum idle interval a transmitting MS/TP node may allow between octets of one frame: 20 bit times.', aliases: ['inter-octet gap'], related: ['mstp', 'tframe-abort']
   }
 ];
 

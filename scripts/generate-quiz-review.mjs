@@ -5,11 +5,21 @@ import path from 'node:path';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sourcePath = path.join(root, 'src/data/bacnet-quiz-questions.json');
 const outputPath = path.join(root, 'docs/reviews/bacnet-competency-question-bank.md');
+const eliteOutputPath = path.join(root, 'docs/reviews/bacnet-elite-question-candidates.md');
+const eliteNetworkOutputPath = path.join(root, 'docs/reviews/bacnet-elite-ip-ethernet-arc156-candidates.md');
 const bank = JSON.parse(await readFile(sourcePath, 'utf8'));
 const questions = bank.questions;
 
 const escapeCell = value => String(value).replaceAll('|', '\\|').replaceAll('\n', '<br>');
 const answerLetter = index => String.fromCharCode(65 + index);
+const formatReferences = question => (question.references ?? [])
+  .map(reference => `[${reference.title}](${reference.url})${reference.locator ? ` — ${reference.locator}` : ''}`)
+  .join('<br>');
+const renderRows = selectedQuestions => selectedQuestions.map(question => {
+  const choices = question.options.map((option, index) => `${answerLetter(index)}. ${option}`).join('<br>');
+  const key = `${answerLetter(question.correctIndex)}. ${question.options[question.correctIndex]}`;
+  return `| ☐ | ${question.id} | ${escapeCell(question.category)} | ${question.difficulty} | ${escapeCell(question.prompt)} | ${escapeCell(choices)} | ${escapeCell(key)} | ${escapeCell(question.explanation)} | ${formatReferences(question)} |`;
+});
 const categoryCounts = [...questions.reduce((counts, question) => {
   counts.set(question.category, (counts.get(question.category) ?? 0) + 1);
   return counts;
@@ -30,13 +40,9 @@ const lines = [
   '',
   '## Review table',
   '',
-  '| Review | ID | Category | Level | Question | Choices | Key | Rationale |',
-  '|:---:|---|---|---|---|---|---|---|',
-  ...questions.map(question => {
-    const choices = question.options.map((option, index) => `${answerLetter(index)}. ${option}`).join('<br>');
-    const key = `${answerLetter(question.correctIndex)}. ${question.options[question.correctIndex]}`;
-    return `| ☐ | ${question.id} | ${escapeCell(question.category)} | ${question.difficulty} | ${escapeCell(question.prompt)} | ${escapeCell(choices)} | ${escapeCell(key)} | ${escapeCell(question.explanation)} |`;
-  }),
+  '| Review | ID | Category | Level | Question | Choices | Key | Rationale | Sources |',
+  '|:---:|---|---|---|---|---|---|---|---|',
+  ...renderRows(questions),
   '',
   '## Technical references used for drafting',
   '',
@@ -50,16 +56,53 @@ const lines = [
 ];
 
 const generated = `${lines.join('\n')}\n`;
+const eliteQuestions = questions.filter(question => question.difficulty === 'elite');
+const eliteLines = [
+  '# BACnet elite question candidates — manual review',
+  '',
+  '> **Status:** Draft candidates. Do not publish until each item is technically reviewed and approved.',
+  '',
+  `This focused table contains **${eliteQuestions.length} elite candidates** from \`src/data/bacnet-quiz-questions.json\`.`,
+  '',
+  '| Review | ID | Category | Level | Question | Choices | Key | Rationale | Sources |',
+  '|:---:|---|---|---|---|---|---|---|---|',
+  ...renderRows(eliteQuestions)
+];
+const eliteGenerated = `${eliteLines.join('\n')}\n`;
+const eliteNetworkQuestions = eliteQuestions.filter(question => {
+  const numericId = Number(question.id.replace('BAC-', ''));
+  return numericId >= 131 && numericId <= 160;
+});
+const eliteNetworkLines = [
+  '# BACnet elite IP, Ethernet, and ARC156 candidates — manual review',
+  '',
+  '> **Status:** Draft candidates. Do not publish until each item is technically reviewed and approved.',
+  '',
+  `This focused table contains the **${eliteNetworkQuestions.length} new elite candidates** covering ARC156, native BACnet/Ethernet, IP/UDP/BVLL, and Ethernet/802.1Q.`,
+  '',
+  '| Review | ID | Category | Level | Question | Choices | Key | Rationale | Sources |',
+  '|:---:|---|---|---|---|---|---|---|---|',
+  ...renderRows(eliteNetworkQuestions)
+];
+const eliteNetworkGenerated = `${eliteNetworkLines.join('\n')}\n`;
 if (process.argv.includes('--check')) {
-  const existing = await readFile(outputPath, 'utf8').catch(() => '');
-  if (existing !== generated) {
-    console.error(`Quiz review table is stale. Run npm run quiz:review and commit ${path.relative(root, outputPath)}.`);
+  const [existing, eliteExisting, eliteNetworkExisting] = await Promise.all([
+    readFile(outputPath, 'utf8').catch(() => ''),
+    readFile(eliteOutputPath, 'utf8').catch(() => ''),
+    readFile(eliteNetworkOutputPath, 'utf8').catch(() => '')
+  ]);
+  if (existing !== generated || eliteExisting !== eliteGenerated || eliteNetworkExisting !== eliteNetworkGenerated) {
+    console.error('Quiz review tables are stale. Run npm run quiz:review and commit all generated review files.');
     process.exitCode = 1;
   } else {
-    console.log(`Verified ${questions.length} questions in ${path.relative(root, outputPath)}`);
+    console.log(`Verified ${questions.length} questions, including ${eliteQuestions.length} elite candidates.`);
   }
 } else {
   await mkdir(path.dirname(outputPath), { recursive: true });
-  await writeFile(outputPath, generated);
-  console.log(`Wrote ${questions.length} questions to ${path.relative(root, outputPath)}`);
+  await Promise.all([
+    writeFile(outputPath, generated),
+    writeFile(eliteOutputPath, eliteGenerated),
+    writeFile(eliteNetworkOutputPath, eliteNetworkGenerated)
+  ]);
+  console.log(`Wrote ${questions.length} questions, ${eliteQuestions.length} elite candidates, and ${eliteNetworkQuestions.length} focused network candidates to the review tables.`);
 }

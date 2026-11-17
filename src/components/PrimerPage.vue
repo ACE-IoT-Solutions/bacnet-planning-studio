@@ -108,6 +108,10 @@
             <strong>6. Multiple B/IP Networks</strong>
             <span>Sharing an IP subnet does not guarantee membership in the same BACnet/IP datalink because the UDP port also matters. Tools and network policies aimed only at port 47808 can silently miss other logical networks.</span>
           </a>
+          <a href="#primer-physical-layer">
+            <strong>7. MS/TP Physical &amp; Token Labs</strong>
+            <span>Explore EIA-485 unit loading, termination, differential and common-mode margins, then vary manager counts, MAC gaps, baud rate, and Max_Info_Frames to see token timing and throughput change.</span>
+          </a>
         </div>
       </nav>
 

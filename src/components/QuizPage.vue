@@ -4,22 +4,38 @@
       <div>
         <p class="eyebrow">BACNET COMPETENCY CHECK</p>
         <h2>Test practical protocol knowledge</h2>
-        <p>Each quiz draws 35 questions from the {{ bacnetQuizQuestions.length }}-question review bank. Questions answered correctly stay out of the draw until the unseen pool runs low.</p>
+        <p>The standard quiz draws 35 questions from the 100-question competency bank. Choose the optional elite mode for advanced protocol, electrical, and timing questions. Correctly answered questions stay out of that mode’s draw until its unseen pool runs low.</p>
       </div>
       <div class="quiz-hero__metrics" aria-label="Quiz progress">
-        <div><strong>{{ bacnetQuizQuestions.length }}</strong><span>question bank</span></div>
+        <div><strong>{{ standardQuizQuestions.length }}</strong><span>standard bank</span></div>
+        <div><strong>{{ eliteQuizQuestions.length }}</strong><span>elite bank</span></div>
         <div><strong>{{ BACNET_QUIZ_SIZE }}</strong><span>per quiz</span></div>
-        <div><strong>{{ masteredCount }}</strong><span>mastered</span></div>
+      </div>
+    </div>
+
+    <div class="quiz-mode-selector glass-card" aria-labelledby="quiz-mode-title">
+      <div>
+        <p class="eyebrow">CHOOSE A MODE</p>
+        <h3 id="quiz-mode-title">{{ session.mode === 'elite' ? 'Elite protocol challenge' : 'Standard competency quiz' }}</h3>
+        <p>{{ modeLocked ? 'Mode is locked after the first answer in a round.' : 'You can switch modes before answering the first question.' }}</p>
+      </div>
+      <div class="quiz-mode-selector__options">
+        <button type="button" :class="{ active: session.mode === 'standard' }" :disabled="modeLocked && session.mode !== 'standard'" @click="selectQuizMode('standard')">
+          <strong>Standard</strong><span>35 from {{ standardQuizQuestions.length }}</span><small>Foundation through advanced</small>
+        </button>
+        <button type="button" :class="{ active: session.mode === 'elite' }" :disabled="modeLocked && session.mode !== 'elite'" @click="selectQuizMode('elite')">
+          <strong>Elite</strong><span>35 from {{ eliteQuizQuestions.length }}</span><small>Optional deep technical round</small>
+        </button>
       </div>
     </div>
 
     <div class="quiz-mastery glass-card">
       <div>
-        <strong>{{ masteredCount }} of {{ bacnetQuizQuestions.length }} answered correctly</strong>
-        <span>{{ remainingCount ? `${remainingCount} still prioritized` : 'All questions have been seen correctly; future quizzes recycle the full bank.' }}</span>
+        <strong>{{ modeMasteredCount }} of {{ currentModeQuestions.length }} {{ session.mode }} questions answered correctly</strong>
+        <span>{{ modeRemainingCount ? `${modeRemainingCount} still prioritized in this mode` : 'This mode is mastered; future rounds recycle its full bank.' }}</span>
       </div>
-      <div class="quiz-mastery__track" role="progressbar" :aria-valuenow="masteredCount" aria-valuemin="0" :aria-valuemax="bacnetQuizQuestions.length">
-        <span :style="{ width: `${masteryPercent}%` }"></span>
+      <div class="quiz-mastery__track" role="progressbar" :aria-valuenow="modeMasteredCount" aria-valuemin="0" :aria-valuemax="currentModeQuestions.length">
+        <span :style="{ width: `${modeMasteryPercent}%` }"></span>
       </div>
     </div>
 
@@ -43,13 +59,14 @@
           <input v-model="honeypot" type="text" tabindex="-1" autocomplete="off">
         </label>
         <p v-if="emailError" class="quiz-email-error" role="alert">{{ emailError }}</p>
-        <AppButton variant="primary" type="submit">Start competency quiz</AppButton>
+        <AppButton variant="primary" type="submit">Start {{ session.mode === 'elite' ? 'elite' : 'competency' }} quiz</AppButton>
       </form>
     </div>
 
     <div v-else-if="!session.completedAt && currentQuestion" class="glass-card quiz-card">
       <div class="quiz-card__meta">
         <span>Question {{ session.currentIndex + 1 }} of {{ session.questionIds.length }}</span>
+        <span>{{ session.mode }} mode</span>
         <span>{{ currentQuestion.category }}</span>
         <span :class="`quiz-difficulty quiz-difficulty--${currentQuestion.difficulty}`">{{ currentQuestion.difficulty }}</span>
         <button type="button" class="quiz-change-email" @click="changeEmail">{{ participant.email }}</button>
@@ -138,19 +155,19 @@
             <article class="quiz-share-card" :class="{ 'quiz-share-card--locked': !hasMasteryBadge }">
               <div class="quiz-share-badge quiz-share-badge--mastery">
                 <span class="quiz-share-badge__icon" aria-hidden="true">★</span>
-                <span><small>BACNET STUDIO</small><strong>100% · Question bank mastered</strong><em>All {{ bacnetQuizQuestions.length }} questions answered correctly</em></span>
+                <span><small>BACNET STUDIO</small><strong>100% · Standard bank mastered</strong><em>All {{ standardQuizQuestions.length }} standard questions answered correctly</em></span>
               </div>
               <div v-if="hasMasteryBadge" class="quiz-share-card__actions">
                 <AppButton data-testid="copy-mastery-badge" size="sm" variant="secondary" @click="copySocialBadge('mastery')">{{ copiedBadge === 'mastery' ? 'Text copied!' : 'Copy post text' }}</AppButton>
                 <AppButton data-testid="copy-mastery-image" size="sm" @click="copyBadgeImage('mastery')">{{ copiedImage === 'mastery' ? 'Image copied!' : 'Copy badge image' }}</AppButton>
                 <AppButton data-testid="download-mastery-image" size="sm" @click="downloadBadgeImage('mastery')">{{ downloadedImage === 'mastery' ? 'Downloaded!' : 'Download PNG' }}</AppButton>
               </div>
-              <span v-else class="quiz-share-card__lock">Unlock at {{ bacnetQuizQuestions.length }} / {{ bacnetQuizQuestions.length }} mastered</span>
+              <span v-else class="quiz-share-card__lock">Unlock at {{ standardQuizQuestions.length }} / {{ standardQuizQuestions.length }} standard questions mastered</span>
             </article>
           </div>
         </section>
         <div class="quiz-actions">
-          <AppButton variant="primary" @click="startNewQuiz">Start another 35</AppButton>
+          <AppButton variant="primary" @click="startNewQuiz(session.mode)">Start another {{ session.mode }} 35</AppButton>
           <AppButton variant="quiet" @click="resetLearningHistory">Reset learning history</AppButton>
         </div>
       </div>
@@ -181,12 +198,15 @@ import {
   BACNET_QUIZ_SESSION_KEY,
   BACNET_QUIZ_SIZE,
   bacnetQuizQuestionById,
-  bacnetQuizQuestions,
   createQuizSession,
+  eliteQuizQuestions,
   parseQuizParticipant,
   parseQuizProgress,
   parseQuizSession,
-  recordQuizAnswer
+  questionsForQuizMode,
+  recordQuizAnswer,
+  standardQuizQuestions,
+  type QuizMode
 } from '../lib/bacnet-quiz';
 import {
   QUIZ_PRIVACY_POLICY_URL,
@@ -226,9 +246,12 @@ const currentAnswer = computed(() => currentQuestion.value ? session.value.answe
 const hasAnsweredCurrent = computed(() => currentAnswer.value !== undefined);
 const currentAnswerIsCorrect = computed(() => currentQuestion.value ? currentAnswer.value === currentQuestion.value.correctIndex : false);
 const isLastQuestion = computed(() => session.value.currentIndex === session.value.questionIds.length - 1);
-const masteredCount = computed(() => bacnetQuizQuestions.filter(question => progress.value.answers[question.id]?.mastered).length);
-const remainingCount = computed(() => bacnetQuizQuestions.length - masteredCount.value);
-const masteryPercent = computed(() => (masteredCount.value / bacnetQuizQuestions.length) * 100);
+const currentModeQuestions = computed(() => questionsForQuizMode(session.value.mode));
+const modeMasteredCount = computed(() => currentModeQuestions.value.filter(question => progress.value.answers[question.id]?.mastered).length);
+const modeRemainingCount = computed(() => currentModeQuestions.value.length - modeMasteredCount.value);
+const modeMasteryPercent = computed(() => (modeMasteredCount.value / currentModeQuestions.value.length) * 100);
+const standardMasteredCount = computed(() => standardQuizQuestions.filter(question => progress.value.answers[question.id]?.mastered).length);
+const modeLocked = computed(() => !session.value.completedAt && Object.keys(session.value.answers).length > 0);
 const sessionPercent = computed(() => ((session.value.currentIndex + (hasAnsweredCurrent.value ? 1 : 0)) / session.value.questionIds.length) * 100);
 const sessionQuestions = computed(() => session.value.questionIds.flatMap(id => {
   const question = bacnetQuizQuestionById.get(id);
@@ -236,7 +259,7 @@ const sessionQuestions = computed(() => session.value.questionIds.flatMap(id => 
 }));
 const sessionScore = computed(() => sessionQuestions.value.filter(question => session.value.answers[question.id] === question.correctIndex).length);
 const scorePercentage = computed(() => Math.round((sessionScore.value / session.value.questionIds.length) * 100));
-const hasMasteryBadge = computed(() => masteredCount.value === bacnetQuizQuestions.length);
+const hasMasteryBadge = computed(() => standardMasteredCount.value === standardQuizQuestions.length);
 const browserOnline = computed(() => typeof navigator === 'undefined' || navigator.onLine !== false);
 const missedQuestions = computed(() => sessionQuestions.value.filter(question => session.value.answers[question.id] !== question.correctIndex));
 const scoreMessage = computed(() => {
@@ -310,8 +333,13 @@ function advanceQuiz() {
   session.value.currentIndex += 1;
 }
 
-function startNewQuiz() {
-  session.value = createQuizSession(progress.value);
+function selectQuizMode(mode: QuizMode) {
+  if (mode === session.value.mode || modeLocked.value) return;
+  session.value = createQuizSession(progress.value, Math.random, mode);
+}
+
+function startNewQuiz(mode: QuizMode = session.value.mode) {
+  session.value = createQuizSession(progress.value, Math.random, mode);
 }
 
 function quizShareUrl() {
@@ -321,14 +349,14 @@ function quizShareUrl() {
 
 function socialBadgeText(kind: 'quiz' | 'mastery') {
   if (kind === 'mastery') return [
-    `🏆 BACnet Studio · ${bacnetQuizQuestions.length}/${bacnetQuizQuestions.length} Question Bank Mastery`,
-    `I correctly answered all ${bacnetQuizQuestions.length} questions in the BACnet Studio competency bank.`,
+    `🏆 BACnet Studio · ${standardQuizQuestions.length}/${standardQuizQuestions.length} Standard Question Bank Mastery`,
+    `I correctly answered all ${standardQuizQuestions.length} standard questions in the BACnet Studio competency bank.`,
     `Test your BACnet knowledge: ${quizShareUrl()}`,
     '#BACnet #BuildingAutomation #BAS'
   ].join('\n');
   return [
-    `🏅 BACnet Studio · Quiz Complete · ${sessionScore.value}/${session.value.questionIds.length} (${scorePercentage.value}%)`,
-    'I completed the BACnet competency quiz. Can you beat my score?',
+    `🏅 BACnet Studio · ${session.value.mode === 'elite' ? 'Elite Quiz' : 'Quiz'} Complete · ${sessionScore.value}/${session.value.questionIds.length} (${scorePercentage.value}%)`,
+    `I completed the BACnet ${session.value.mode === 'elite' ? 'elite' : 'competency'} quiz. Can you beat my score?`,
     `Take the quiz: ${quizShareUrl()}`,
     '#BACnet #BuildingAutomation #BAS'
   ].join('\n');
@@ -406,16 +434,16 @@ function drawBadgeImage(kind: 'quiz' | 'mastery') {
   context.textAlign = 'left';
   context.fillStyle = '#c1d301';
   context.font = '700 23px Montserrat, Arial, sans-serif';
-  context.fillText(kind === 'mastery' ? 'BACNET STUDIO MASTERY' : 'BACNET COMPETENCY CHECK', 70, 92);
+  context.fillText(kind === 'mastery' ? 'BACNET STUDIO MASTERY' : session.value.mode === 'elite' ? 'BACNET ELITE CHALLENGE' : 'BACNET COMPETENCY CHECK', 70, 92);
   context.fillStyle = '#ffffff';
   context.font = '800 104px Montserrat, Arial, sans-serif';
-  context.fillText(kind === 'mastery' ? `${bacnetQuizQuestions.length} / ${bacnetQuizQuestions.length}` : `${scorePercentage.value}%`, 68, 245);
+  context.fillText(kind === 'mastery' ? `${standardQuizQuestions.length} / ${standardQuizQuestions.length}` : `${scorePercentage.value}%`, 68, 245);
   context.font = '700 48px Montserrat, Arial, sans-serif';
-  context.fillText(kind === 'mastery' ? 'Question bank mastered' : 'Quiz complete', 70, 326);
+  context.fillText(kind === 'mastery' ? 'Standard bank mastered' : session.value.mode === 'elite' ? 'Elite quiz complete' : 'Quiz complete', 70, 326);
   context.fillStyle = '#cbd0dd';
   context.font = '500 29px Montserrat, Arial, sans-serif';
   context.fillText(kind === 'mastery'
-    ? `Every BACnet Studio question answered correctly`
+    ? `Every standard BACnet Studio question answered correctly`
     : `${sessionScore.value} of ${session.value.questionIds.length} questions answered correctly`, 70, 383);
   context.fillStyle = '#8991a6';
   context.font = '500 20px Montserrat, Arial, sans-serif';
@@ -482,7 +510,7 @@ async function deliverQuizResult() {
   session.value.deliveryConfirmedAt = undefined;
   session.value.deliveryRequestId = undefined;
   session.value.deliveryAttemptedAt = new Date().toISOString();
-  const payload = buildQuizResultPayload(session.value, participant.value, masteredCount.value);
+  const payload = buildQuizResultPayload(session.value, participant.value, modeMasteredCount.value);
   const delivery = await submitQuizResult(payload);
   session.value.deliveryStatus = delivery.status;
   session.value.deliveryMessage = delivery.message;
@@ -493,7 +521,7 @@ async function deliverQuizResult() {
 function resetLearningHistory() {
   if (!window.confirm('Reset all saved quiz answers and mastery progress in this browser?')) return;
   progress.value = { version: 1, answers: {} };
-  session.value = createQuizSession(progress.value);
+  session.value = createQuizSession(progress.value, Math.random, session.value.mode);
 }
 </script>
 
@@ -506,6 +534,14 @@ function resetLearningHistory() {
 .quiz-hero__metrics div { padding: 0.85rem; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: rgba(255,255,255,0.025); text-align: center; }
 .quiz-hero__metrics strong { display: block; color: var(--primary); font: 800 1.6rem var(--font-heading); }
 .quiz-hero__metrics span { color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.quiz-mode-selector { display: grid; grid-template-columns: minmax(14rem, .7fr) minmax(22rem, 1.3fr); gap: 1rem; align-items: center; padding: 1rem 1.25rem; }
+.quiz-mode-selector h3 { margin-top: .2rem; color: var(--text-primary); font: 800 1.05rem var(--font-heading); }
+.quiz-mode-selector p:not(.eyebrow) { margin-top: .25rem; color: var(--text-muted); font-size: .76rem; }
+.quiz-mode-selector__options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .65rem; }
+.quiz-mode-selector__options button { display: grid; gap: .2rem; padding: .8rem; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: rgba(255,255,255,.025); color: var(--text-secondary); text-align: left; cursor: pointer; }
+.quiz-mode-selector__options button.active { border-color: rgba(var(--primary-rgb),.65); background: var(--ace-primary-soft); }
+.quiz-mode-selector__options button:disabled { cursor: not-allowed; opacity: .45; }
+.quiz-mode-selector__options strong { color: var(--text-primary); font: 800 .9rem var(--font-heading); }.quiz-mode-selector__options span { color: var(--primary); font: 750 .75rem var(--font-heading); }.quiz-mode-selector__options small { color: var(--text-muted); font-size: .68rem; }
 .quiz-mastery { display: grid; grid-template-columns: minmax(16rem, 0.65fr) minmax(15rem, 1.35fr); gap: 1rem; align-items: center; padding: 1rem 1.25rem; }
 .quiz-mastery strong, .quiz-mastery span { display: block; }
 .quiz-mastery span { color: var(--text-muted); font-size: 0.82rem; }
@@ -530,6 +566,7 @@ function resetLearningHistory() {
 .quiz-difficulty--foundation { color: var(--secondary); }
 .quiz-difficulty--intermediate { color: var(--warning); }
 .quiz-difficulty--advanced { color: #ff8c66; }
+.quiz-difficulty--elite { color: var(--primary); }
 .quiz-session-progress { margin: 0.8rem 0 1.4rem; height: 0.3rem; }
 .quiz-question { display: grid; gap: 0.7rem; border: 0; }
 .quiz-question legend { margin-bottom: 1.15rem; color: var(--text-primary); font: 750 clamp(1.2rem, 3vw, 1.65rem) var(--font-heading); line-height: 1.3; }
@@ -590,12 +627,13 @@ function resetLearningHistory() {
 .quiz-review p { margin-top: 0.35rem; color: var(--text-secondary); }
 .quiz-review--perfect { border-color: rgba(20,174,92,0.4); }
 @media (max-width: 800px) {
-  .quiz-hero, .quiz-mastery, .quiz-email-gate { grid-template-columns: 1fr; }
+  .quiz-hero, .quiz-mastery, .quiz-email-gate, .quiz-mode-selector { grid-template-columns: 1fr; }
   .quiz-hero__metrics { width: 100%; }
   .quiz-share__badges { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {
   .quiz-hero__metrics { grid-template-columns: 1fr; }
+  .quiz-mode-selector__options { grid-template-columns: 1fr; }
   .quiz-hero__metrics div { display: flex; justify-content: space-between; align-items: baseline; }
   .quiz-option { grid-template-columns: auto minmax(0, 1fr); }
   .quiz-option input { position: absolute; opacity: 0; pointer-events: none; }

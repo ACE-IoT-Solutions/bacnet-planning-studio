@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   bacnetQuizQuestions,
+  createQuizSession,
+  eliteQuizQuestions,
   emptyQuizProgress,
   parseQuizSession,
   recordQuizAnswer,
   selectQuizQuestionIds,
+  standardQuizQuestions,
   type QuizProgress
 } from './bacnet-quiz';
 
@@ -15,7 +18,7 @@ describe('BACnet competency question bank', () => {
     for (const question of bacnetQuizQuestions) {
       expect(question.id).toMatch(/^BAC-[0-9]{3,}$/);
       expect(question.category.trim().length).toBeGreaterThanOrEqual(2);
-      expect(['foundation', 'intermediate', 'advanced']).toContain(question.difficulty);
+      expect(['foundation', 'intermediate', 'advanced', 'elite']).toContain(question.difficulty);
       expect(question.prompt.length).toBeGreaterThan(12);
       expect(question.options).toHaveLength(4);
       expect(new Set(question.options).size).toBe(4);
@@ -23,6 +26,11 @@ describe('BACnet competency question bank', () => {
       expect(question.correctIndex).toBeGreaterThanOrEqual(0);
       expect(question.correctIndex).toBeLessThan(4);
       expect(question.explanation.length).toBeGreaterThan(12);
+      for (const reference of question.references ?? []) {
+        expect(reference.title.trim().length).toBeGreaterThanOrEqual(3);
+        expect(reference.url).toMatch(/^https:\/\//);
+      }
+      if (question.difficulty === 'elite') expect(question.references?.length).toBeGreaterThan(0);
     }
     const answerPositionCounts = [0, 1, 2, 3].map(index => bacnetQuizQuestions.filter(question => question.correctIndex === index).length);
     expect(Math.max(...answerPositionCounts) - Math.min(...answerPositionCounts)).toBeLessThanOrEqual(5);
@@ -64,9 +72,19 @@ describe('BACnet competency question bank', () => {
     expect(selected.every(id => !progress.answers[id]?.mastered)).toBe(true);
   });
 
+  it('keeps standard and elite quiz draws in separate pools', () => {
+    const progress = emptyQuizProgress();
+    const standard = createQuizSession(progress, () => 0.5, 'standard');
+    const elite = createQuizSession(progress, () => 0.5, 'elite');
+    expect(standardQuizQuestions).toHaveLength(100);
+    expect(eliteQuizQuestions).toHaveLength(60);
+    expect(standard.questionIds.every(id => standardQuizQuestions.some(question => question.id === id))).toBe(true);
+    expect(elite.questionIds.every(id => eliteQuizQuestions.some(question => question.id === id))).toBe(true);
+  });
+
   it('uses mastered questions only after the remaining pool is exhausted', () => {
     const progress: QuizProgress = { version: 1, answers: {} };
-    for (const question of bacnetQuizQuestions.slice(0, 90)) {
+    for (const question of bacnetQuizQuestions.slice(0, -10)) {
       progress.answers[question.id] = { attempts: 1, correctAnswers: 1, mastered: true, lastSelectedIndex: question.correctIndex };
     }
     const selected = selectQuizQuestionIds(bacnetQuizQuestions, progress, 35, () => 0.25);

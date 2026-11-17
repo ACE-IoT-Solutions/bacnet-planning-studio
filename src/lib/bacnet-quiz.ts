@@ -1,6 +1,13 @@
 import rawQuestions from '../data/bacnet-quiz-questions.json';
 
-export type QuizDifficulty = 'foundation' | 'intermediate' | 'advanced';
+export type QuizDifficulty = 'foundation' | 'intermediate' | 'advanced' | 'elite';
+export type QuizMode = 'standard' | 'elite';
+
+export interface QuizReference {
+  title: string;
+  url: string;
+  locator?: string;
+}
 
 export interface BacnetQuizQuestion {
   id: string;
@@ -10,6 +17,7 @@ export interface BacnetQuizQuestion {
   options: [string, string, string, string];
   correctIndex: number;
   explanation: string;
+  references?: QuizReference[];
 }
 
 export interface QuizProgressEntry {
@@ -26,6 +34,7 @@ export interface QuizProgress {
 
 export interface QuizSession {
   version: 1;
+  mode: QuizMode;
   sessionId: string;
   questionIds: string[];
   answers: Record<string, number>;
@@ -52,6 +61,12 @@ export const BACNET_QUIZ_PARTICIPANT_KEY = 'bacnet-studio-quiz-participant-v1';
 export const BACNET_QUIZ_BANK_VERSION = rawQuestions.version;
 export const bacnetQuizQuestions = rawQuestions.questions as BacnetQuizQuestion[];
 export const bacnetQuizQuestionById = new Map(bacnetQuizQuestions.map(question => [question.id, question]));
+export const standardQuizQuestions = bacnetQuizQuestions.filter(question => question.difficulty !== 'elite');
+export const eliteQuizQuestions = bacnetQuizQuestions.filter(question => question.difficulty === 'elite');
+
+export function questionsForQuizMode(mode: QuizMode): BacnetQuizQuestion[] {
+  return mode === 'elite' ? eliteQuizQuestions : standardQuizQuestions;
+}
 
 export function emptyQuizProgress(): QuizProgress {
   return { version: 1, answers: {} };
@@ -81,11 +96,16 @@ export function selectQuizQuestionIds(
   return selected.map(question => question.id);
 }
 
-export function createQuizSession(progress: QuizProgress, random: () => number = Math.random): QuizSession {
+export function createQuizSession(
+  progress: QuizProgress,
+  random: () => number = Math.random,
+  mode: QuizMode = 'standard'
+): QuizSession {
   return {
     version: 1,
+    mode,
     sessionId: createQuizSessionId(random),
-    questionIds: selectQuizQuestionIds(bacnetQuizQuestions, progress, BACNET_QUIZ_SIZE, random),
+    questionIds: selectQuizQuestionIds(questionsForQuizMode(mode), progress, BACNET_QUIZ_SIZE, random),
     answers: {},
     currentIndex: 0,
     startedAt: new Date().toISOString()
@@ -138,6 +158,7 @@ export function parseQuizSession(raw: string | null): QuizSession | null {
     const legacyUnverifiedDelivery = parsed.deliveryStatus === 'sent' && !parsed.deliveryConfirmedAt;
     return {
       version: 1,
+      mode: parsed.mode === 'elite' ? 'elite' : 'standard',
       sessionId: typeof parsed.sessionId === 'string' && parsed.sessionId ? parsed.sessionId : createQuizSessionId(),
       questionIds: parsed.questionIds,
       answers: parsed.answers as Record<string, number>,

@@ -16,7 +16,7 @@ describe('quiz result delivery', () => {
     session.completedAt = '2026-11-16T16:00:00.000Z';
     const participant: QuizParticipant = { version: 1, email: ' Learner@Example.com ', consentAt: '2026-11-16T15:00:00.000Z' };
     const payload = buildQuizResultPayload(session, participant, 35, 'https://example.com/#quiz');
-    expect(payload).toMatchObject({ email: 'learner@example.com', score: 35, total: 35, percentage: 100, masteredTotal: 35 });
+    expect(payload).toMatchObject({ email: 'learner@example.com', mode: 'standard', score: 35, total: 35, percentage: 100, masteredTotal: 35 });
     expect(payload.incorrectQuestionIds).toEqual([]);
   });
 

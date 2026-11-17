@@ -28,7 +28,7 @@ This is designed for control engineers, network integrators, and building automa
   - **BBMD Tunneling Simulator:** Traces how BACnet Broadcast Management Devices encapsulate and tunnel broadcasts across IP routers.
   - **Discovery vs. Reachability:** Demonstrates how a BBMD-forwarded I-Am can make a device visible even though later ReadProperty and other unicast services fail because the advertised address is not routable.
 - **Searchable BACnet Glossary:** Defines protocol, message, datalink, IP-networking, and system-delivery terminology, with direct links from explanatory content throughout every application page.
-- **BACnet Competency Quiz (review candidate):** Draws 35 questions from a versioned JSON question bank, saves answers and mastery progress locally, and prioritizes questions the user has not yet answered correctly. Contributors can add questions without changing application code; see `docs/contributing-quiz-questions.md`. The generated bank is available for manual review in `docs/reviews/bacnet-competency-question-bank.md`.
+- **BACnet Competency Quiz (review candidate):** Draws 35 questions from the 100-question standard bank or an optional 60-question elite bank, saves answers and separate mastery progress locally, and prioritizes questions the user has not yet answered correctly in the selected mode. Contributors can add questions without changing application code; see `docs/contributing-quiz-questions.md`. Generated full, elite, and focused review tables are available under `docs/reviews/`.
 - **Updates Signup:** Presents a dismissible, one-time email signup and keeps an always-available signup control in the footer.
 
 ## Technology Stack

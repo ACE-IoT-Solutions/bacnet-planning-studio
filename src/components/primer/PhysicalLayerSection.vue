@@ -3,41 +3,53 @@
     <p class="eyebrow">FROM LOGICAL TO INSTALLED</p>
     <h3 class="card-title">7. Physical layer: cabling, ports, MS/TP, and ARC156</h3>
     <p>A correct BACnet address plan still depends on the installed path. Switch VLANs, cable media and reach, power delivery, and serial-bus order can each make a logically correct controller unreachable.</p>
-    <PrimerScenarioIntro difference="BACnet discovery depends on the broadcast domain and the installed serial or Ethernet path, not only on a valid device address." risk="A VLAN, termination, cable-length, or power fault can keep a logically correct controller offline.">Change the controls in each field scenario to see when the physical layer invalidates a BACnet plan.</PrimerScenarioIntro>
+    <PrimerScenarioIntro difference="BACnet discovery depends on the broadcast domain and the installed serial or Ethernet path, not only on a valid device address." risk="A VLAN, termination, cable-length, or power fault can keep a logically correct controller offline.">Start with the installed path: where frames go, what happens to the signal, and whether equipment receives power. Use the electrical and token labs below to explore those mechanisms.</PrimerScenarioIntro>
     <div class="physical-primer-grid">
       <article>
         <strong>Access-port VLAN mismatch</strong>
-        <p>A controller addressed for VLAN 20 is patched to an access port in VLAN 10. Its IP settings look correct, but its untagged Ethernet frames enter the wrong broadcast domain.</p>
-        <label>Controller VLAN <input v-model.number="controllerVlan" type="number" min="1" max="4094"></label><label>Switch access VLAN <input v-model.number="accessVlan" type="number" min="1" max="4094"></label>
-        <small :class="controllerVlan === accessVlan ? 'scenario-pass' : 'scenario-fail'">{{ controllerVlan === accessVlan ? 'PASS · Frames enter the intended broadcast domain.' : 'FAIL · The access port places traffic in the wrong VLAN.' }}</small>
+        <p>A controller intended for VLAN 20 is patched into an access port assigned to VLAN 10. Its IP address does not tell the switch which VLAN to use: untagged frames enter the port’s configured broadcast domain.</p>
+        <dl>
+          <dt>What you observe</dt><dd>The controller has plausible IP settings, but its local discovery traffic does not reach the intended peers.</dd>
+          <dt>What to check</dt><dd>Trace the patching to the actual switch port and inspect its access VLAN. Follow the frame’s Layer 2 path before changing IP settings or adding a BBMD.</dd>
+        </dl>
       </article>
       <article>
         <strong>MS/TP termination and bias</strong>
-        <p>An EIA-485 daisy chain needs termination at its two physical ends and one intentional bias source per segment. Mid-chain termination or accidental stars create reflections and intermittent token loss.</p>
-        <label>Terminations <input v-model.number="terminations" type="number" min="0" max="4"></label><label>Bias sources <input v-model.number="biasSources" type="number" min="0" max="4"></label>
-        <small :class="terminations === 2 && biasSources === 1 ? 'scenario-pass' : 'scenario-fail'">{{ terminations === 2 && biasSources === 1 ? 'PASS · Two end terminations and one bias source.' : 'FAIL · Configure exactly two end terminations and one bias source.' }}</small>
+        <p>Termination absorbs signal energy at the physical ends of the cable; bias establishes an idle differential when no transmitter drives the pair. They solve different problems. Counting resistors alone cannot establish that the wiring is correct.</p>
+        <dl>
+          <dt>What you observe</dt><dd>Reflections distort transitions; inadequate idle bias can leave a receiver near its switching threshold between transmissions.</dd>
+          <dt>What to check</dt><dd>Locate the two physical cable ends, verify termination placement and values, and check the equipment’s bias arrangement. In the electrical lab below, compare source and receiver traces as termination and cable length change.</dd>
+        </dl>
       </article>
       <article>
         <strong>PoE budget exhaustion</strong>
-        <p>A port may advertise PoE while the switch cannot supply every attached load simultaneously. Compare each device class with its port and total switch power budget.</p>
-        <label>Switch budget (W) <input v-model.number="poeBudget" type="number" min="0"></label><label>Connected load (W) <input v-model.number="poeLoad" type="number" min="0"></label>
-        <small :class="poeLoad <= poeBudget ? 'scenario-pass' : 'scenario-fail'">{{ poeLoad <= poeBudget ? `PASS · ${poeBudget - poeLoad} W remains.` : `FAIL · Load exceeds budget by ${poeLoad - poeBudget} W.` }}</small>
+        <p>PoE capability on each port does not guarantee enough total switch power for every connected device. Per-port capability and the shared power budget are separate constraints.</p>
+        <dl>
+          <dt>What you observe</dt><dd>A controller cannot communicate because it is not receiving power, even though its network configuration is correct.</dd>
+          <dt>What to check</dt><dd>Inspect the port’s power status and allocation, the endpoint’s required PoE class, and the switch’s remaining budget. Establish that the controller is powered before troubleshooting BACnet discovery.</dd>
+        </dl>
       </article>
       <article>
         <strong>ALC BACnet ARC156</strong>
-        <p>Automated Logic ARC156 runs BACnet ARCNET at 156.25 kbps over shielded EIA-485 cabling. Model it as an ordered daisy chain—not Ethernet—and track its 610 m (2000 ft) and 32-node segment limits.</p>
-        <label>Nodes <input v-model.number="arcNodes" type="number" min="1"></label><label>Length (m) <input v-model.number="arcLength" type="number" min="0"></label>
-        <small :class="arcNodes <= 32 && arcLength <= 610 ? 'scenario-pass' : 'scenario-fail'">{{ arcNodes <= 32 && arcLength <= 610 ? 'PASS · Segment is within the modeled ARC156 limits.' : `FAIL · ${arcNodes > 32 ? 'Add a repeater above 32 nodes. ' : ''}${arcLength > 610 ? 'Add a repeater beyond 610 m.' : ''}` }}</small>
+        <p>ARC156 combines ARCNET token handling with an EIA-485 physical path. Cable segments and the logical token loop describe different things: a repeater divides the electrical path without creating a new BACnet network.</p>
+        <dl>
+          <dt>What matters</dt><dd>ALC’s wiring requirements specify a daisy chain with up to 32 devices and 610 m (2000 ft) per segment. These are design limits, not a prediction that communication abruptly fails at the next device or metre.</dd>
+          <dt>What to check</dt><dd>Trace segment boundaries, repeater placement, cable length, and end termination against the controller’s installation instructions. ARC156 token maintenance differs from the MS/TP Poll For Master process demonstrated below.</dd>
+        </dl>
       </article>
     </div>
+    <MstpPrimerLabs />
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
 import PrimerScenarioIntro from '../PrimerScenarioIntro.vue';
-const controllerVlan = ref(20); const accessVlan = ref(10);
-const terminations = ref(1); const biasSources = ref(0);
-const poeBudget = ref(120); const poeLoad = ref(145);
-const arcNodes = ref(33); const arcLength = ref(650);
+import MstpPrimerLabs from './MstpPrimerLabs.vue';
 </script>
+
+<style scoped>
+.physical-primer-grid dl { margin: .8rem 0 0; font-size: .84rem; line-height: 1.6; }
+.physical-primer-grid dt { color: var(--text-primary); font-weight: 700; margin-top: .7rem; }
+.physical-primer-grid dd { margin: .2rem 0 0; color: var(--text-secondary); }
+@media (max-width: 700px) { .physical-primer-grid { grid-template-columns: 1fr; } }
+</style>

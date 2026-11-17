@@ -1401,6 +1401,945 @@
       ],
       "correctIndex": 3,
       "explanation": "A malformed broadcast-distribution topology can replicate traffic. Review peer entries and packet traces before making unrelated application changes."
+    },
+    {
+      "id": "BAC-101",
+      "category": "EIA-485 electrical engineering",
+      "difficulty": "elite",
+      "prompt": "An EIA-485 receiver measures +2.35 V at its non-inverting input and +2.05 V at its inverting input. What is guaranteed?",
+      "options": [
+        "A high state, because the differential input is +300 mV",
+        "An undefined state, because the differential is below 1.5 V",
+        "A low state, because both input voltages are positive",
+        "An invalid state, because common mode must equal zero volts"
+      ],
+      "correctIndex": 0,
+      "explanation": "The receiver evaluates the difference between its inputs: 2.35 V − 2.05 V = +0.30 V. That exceeds the +200 mV threshold, while the +2.20 V common-mode level remains inside the allowed range.",
+      "references": [{ "title": "Analog Devices AN-960: RS-485/RS-422 Circuit Implementation Guide", "url": "https://www.analog.com/en/resources/app-notes/an-960.html", "locator": "Receiver differential sensitivity and common-mode range" }]
+    },
+    {
+      "id": "BAC-102",
+      "category": "EIA-485 electrical engineering",
+      "difficulty": "elite",
+      "prompt": "Before BACnet addressing, topology, and product limits are applied, what theoretical receiver count corresponds to 1/4-unit-load EIA-485 transceivers?",
+      "options": [
+        "64 receivers before accounting for other limits",
+        "128 receivers before accounting for other limits",
+        "256 receivers under the same electrical calculation",
+        "32 receivers because fractional loads do not add"
+      ],
+      "correctIndex": 1,
+      "explanation": "Each quarter-unit-load receiver consumes 0.25 UL; 32 divided by 0.25 equals 128 theoretical receivers.",
+      "references": [{ "title": "TI RS-485 Basics Series", "url": "https://www.ti.com/lit/wp/slla545/slla545.pdf", "locator": "Table 1, 1/4 UL row" }]
+    },
+    {
+      "id": "BAC-103",
+      "category": "EIA-485 electrical engineering",
+      "difficulty": "elite",
+      "prompt": "A loaded-driver compliance test measures 1.2 V differential across the EIA-485 test load. How should that result be interpreted?",
+      "options": [
+        "It passes because any differential above 200 mV satisfies the driver test",
+        "It passes because the loaded-driver minimum is exactly 1.0 V differential",
+        "It fails the 1.5 V loaded-driver minimum, even though a receiver may switch",
+        "It fails only if the common-mode voltage is also outside the permitted range"
+      ],
+      "correctIndex": 2,
+      "explanation": "Driver compliance and receiver sensitivity are different limits. A receiver threshold is ±200 mV, but the standard loaded-driver test requires at least 1.5 V differential output, so 1.2 V fails.",
+      "references": [{ "title": "TI RS-485 Basics Series", "url": "https://www.ti.com/lit/wp/slla545/slla545.pdf", "locator": "Driver output test and receiver threshold comparison" }]
+    },
+    {
+      "id": "BAC-104",
+      "category": "EIA-485 electrical engineering",
+      "difficulty": "elite",
+      "prompt": "Which minimum receiver input resistance represents one standard EIA-485 unit load at the 12 V test point?",
+      "options": [
+        "96 kΩ, equivalent to one-eighth unit load",
+        "48 kΩ, equivalent to one-quarter unit load",
+        "24 kΩ, equivalent to one-half unit load",
+        "12 kΩ, equivalent to one full unit load"
+      ],
+      "correctIndex": 3,
+      "explanation": "One unit load is represented by 1 mA at 12 V, equivalent to a 12 kΩ minimum input resistance. Fractional-load receivers have proportionally higher input resistance.",
+      "references": [{ "title": "TI RS-485 Basics Series", "url": "https://www.ti.com/lit/wp/slla545/slla545.pdf", "locator": "Table 1, 1 UL row" }]
+    },
+    {
+      "id": "BAC-105",
+      "category": "EIA-485 electrical engineering",
+      "difficulty": "elite",
+      "prompt": "A mixed EIA-485 segment has 20 full-unit-load receivers and 24 half-unit-load receivers. What is its receiver loading?",
+      "options": [
+        "32 UL, exactly the nominal segment load budget",
+        "44 UL, because each package counts as one load",
+        "22 UL, after averaging the two receiver groups",
+        "64 UL, the limit for all fractional-load devices"
+      ],
+      "correctIndex": 0,
+      "explanation": "The total is 20 × 1 UL plus 24 × 0.5 UL, or 32 UL. Device count alone is not the electrical loading calculation.",
+      "references": [{ "title": "TI RS-485 Basics Series", "url": "https://www.ti.com/lit/wp/slla545/slla545.pdf", "locator": "Unit-load definition and Table 1" }]
+    },
+    {
+      "id": "BAC-106",
+      "category": "EIA-485 electrical engineering",
+      "difficulty": "elite",
+      "prompt": "For a conventional EIA-485 receiver, which differential input guarantees the non-inverting input is recognized as high?",
+      "options": [
+        "At least +50 mV across the receiver inputs",
+        "At least +200 mV across the receiver inputs",
+        "At least +1.5 V measured to signal ground",
+        "At least +5 V measured between both inputs"
+      ],
+      "correctIndex": 1,
+      "explanation": "A conventional EIA-485 receiver guarantees one state at +200 mV or greater differential input and the opposite state at −200 mV or less.",
+      "references": [{ "title": "Analog Devices AN-960: RS-485/RS-422 Circuit Implementation Guide", "url": "https://www.analog.com/en/resources/app-notes/an-960.html", "locator": "Receiver input sensitivity discussion" }]
+    },
+    {
+      "id": "BAC-107",
+      "category": "EIA-485 electrical engineering",
+      "difficulty": "elite",
+      "prompt": "What does the base EIA-485 threshold specification guarantee when the differential input is between −200 mV and +200 mV?",
+      "options": [
+        "A guaranteed logic zero throughout that interval",
+        "A guaranteed logic one throughout that interval",
+        "No defined conventional-receiver output in that interval",
+        "A guaranteed alternating output at the baud rate"
+      ],
+      "correctIndex": 2,
+      "explanation": "The conventional receiver output is undefined inside the ±200 mV threshold band. True fail-safe receivers add behavior beyond that basic guarantee.",
+      "references": [{ "title": "Analog Devices AN-1458: Isolated RS-485 with Integrated Transformer Driver", "url": "https://www.analog.com/en/resources/app-notes/an-1458.html", "locator": "Standard receiver threshold and true fail-safe discussion" }]
+    },
+    {
+      "id": "BAC-108",
+      "category": "EIA-485 electrical engineering",
+      "difficulty": "elite",
+      "prompt": "Which common-mode input range must a standard EIA-485 receiver tolerate while detecting the differential signal?",
+      "options": [
+        "0 V through +5 V only at both conductors",
+        "−12 V through +12 V relative to shield",
+        "−5 V through +5 V relative to local common",
+        "−7 V through +12 V at the receiver inputs"
+      ],
+      "correctIndex": 3,
+      "explanation": "EIA-485 receivers are specified to operate with input common-mode voltage from −7 V to +12 V while evaluating the differential voltage.",
+      "references": [{ "title": "Analog Devices AN-960: RS-485/RS-422 Circuit Implementation Guide", "url": "https://www.analog.com/en/resources/app-notes/an-960.html", "locator": "Receiver common-mode range" }]
+    },
+    {
+      "id": "BAC-109",
+      "category": "EIA-485 electrical engineering",
+      "difficulty": "elite",
+      "prompt": "Across the standard loaded EIA-485 driver test circuit, what differential output range is expected?",
+      "options": [
+        "At least 1.5 V and no more than 5 V",
+        "At least 0.2 V and no more than 1 V",
+        "At least 5 V and no more than 12 V",
+        "Exactly 2.5 V with zero permitted tolerance"
+      ],
+      "correctIndex": 0,
+      "explanation": "The loaded driver test requires at least 1.5 V differential output and limits it to 5 V; the receiver threshold is much lower at ±200 mV.",
+      "references": [{ "title": "TI RS-485 Basics Series", "url": "https://www.ti.com/lit/wp/slla545/slla545.pdf", "locator": "Driver output test, 1.5 V < VOD < 5 V" }]
+    },
+    {
+      "id": "BAC-110",
+      "category": "EIA-485 electrical engineering",
+      "difficulty": "elite",
+      "prompt": "Why is approximately 54 Ω used in the EIA-485 loaded-driver compliance test?",
+      "options": [
+        "It models one 54 Ω cable with no termination or receivers",
+        "It represents the worst-case parallel effect of terminations and receiver loads",
+        "It forces each receiver input to consume exactly two unit loads",
+        "It is the required characteristic impedance for BACnet MS/TP cable"
+      ],
+      "correctIndex": 1,
+      "explanation": "The compliance load approximates the heavy parallel loading produced by two end terminations together with the allowed receiver unit loads; it is not the cable impedance.",
+      "references": [{ "title": "TI RS-485 Basics Series", "url": "https://www.ti.com/lit/wp/slla545/slla545.pdf", "locator": "Figure 4 and 54 Ω loaded-driver test discussion" }]
+    },
+    {
+      "id": "BAC-111",
+      "category": "EIA-485 electrical engineering",
+      "difficulty": "elite",
+      "prompt": "Before receiver loading is included, what DC load do two 120 Ω end-of-line terminators present to the driver?",
+      "options": [
+        "240 Ω because the two terminators are in series",
+        "120 Ω because only the far terminator is visible",
+        "60 Ω because both terminators are in parallel",
+        "54 Ω because cable impedance changes each resistor"
+      ],
+      "correctIndex": 2,
+      "explanation": "From the differential driver's perspective, the two 120 Ω end terminations are parallel, producing 60 Ω before receiver input loading is added.",
+      "references": [{ "title": "TI RS-485 Basics Series", "url": "https://www.ti.com/lit/wp/slla545/slla545.pdf", "locator": "Termination and loaded-driver test discussion" }]
+    },
+    {
+      "id": "BAC-112",
+      "category": "EIA-485 electrical engineering",
+      "difficulty": "elite",
+      "prompt": "What electrical state should an EIA-485 transceiver enter when its driver-enable input is deasserted?",
+      "options": [
+        "Drive both conductors high through low impedance",
+        "Drive a continuous alternating synchronization pattern",
+        "Short the pair together to suppress reflections",
+        "Present a high-impedance, tri-stated driver output"
+      ],
+      "correctIndex": 3,
+      "explanation": "Deasserting driver enable places the driver outputs in a high-impedance state so another station can drive the shared bus.",
+      "references": [{ "title": "Analog Devices AN-960: RS-485/RS-422 Circuit Implementation Guide", "url": "https://www.analog.com/en/resources/app-notes/an-960.html", "locator": "Driver-enable and tri-state operation" }]
+    },
+    {
+      "id": "BAC-113",
+      "category": "EIA-485 electrical engineering",
+      "difficulty": "elite",
+      "prompt": "On a two-wire half-duplex MS/TP segment, how many stations may actively drive the pair at one instant during normal operation?",
+      "options": [
+        "One station; all other drivers must be high impedance",
+        "Two stations, provided their transmitted bits agree",
+        "Every manager currently represented in the token ring",
+        "All stations while the token frame is being repeated"
+      ],
+      "correctIndex": 0,
+      "explanation": "Two-wire EIA-485 is a shared half-duplex medium. Only the current transmitter may enable its driver; simultaneous drivers create contention.",
+      "references": [{ "title": "Analog Devices AN-960: RS-485/RS-422 Circuit Implementation Guide", "url": "https://www.analog.com/en/resources/app-notes/an-960.html", "locator": "Two-wire half-duplex multipoint operation" }]
+    },
+    {
+      "id": "BAC-114",
+      "category": "EIA-485 electrical engineering",
+      "difficulty": "elite",
+      "prompt": "A receiver sees +14 V on one input and +12 V on the other. The 2 V differential is adequate; what remains wrong?",
+      "options": [
+        "The differential is below the 200 mV receiver threshold",
+        "The +13 V common-mode level exceeds the +12 V limit",
+        "The pair has exactly the required 2 V common-mode level",
+        "Nothing; differential amplitude is the only EIA-485 limit"
+      ],
+      "correctIndex": 1,
+      "explanation": "The average input level is +13 V, outside the standard +12 V common-mode ceiling, even though the 2 V differential amplitude is healthy.",
+      "references": [{ "title": "Analog Devices AN-960: RS-485/RS-422 Circuit Implementation Guide", "url": "https://www.analog.com/en/resources/app-notes/an-960.html", "locator": "Differential sensitivity and −7 V to +12 V common-mode range" }]
+    },
+    {
+      "id": "BAC-115",
+      "category": "MS/TP token and timing",
+      "difficulty": "elite",
+      "prompt": "After how much qualifying silence does an MS/TP manager conclude that the token has been lost?",
+      "options": [
+        "20 ms of silence after the previous octet",
+        "255 ms of silence after a confirmed request",
+        "500 ms without a data-available or receive-error event",
+        "1,000 ms without receiving a complete token frame"
+      ],
+      "correctIndex": 2,
+      "explanation": "Tno_token is 500 ms without a DataAvailable or ReceiveError event. The node then enters the no-token recovery process.",
+      "references": [{ "title": "BACnet Stack MS/TP definitions", "url": "https://github.com/bacnet-stack/bacnet-stack/blob/master/src/bacnet/datalink/mstpdef.h", "locator": "Tno_token" }]
+    },
+    {
+      "id": "BAC-116",
+      "category": "MS/TP token and timing",
+      "difficulty": "elite",
+      "prompt": "What is the width of each address-based token-generation slot during MS/TP lost-token recovery?",
+      "options": [
+        "1 ms per station-address slot",
+        "5 ms per station-address slot",
+        "20 milliseconds per station-address time slot",
+        "10 ms per station-address slot"
+      ],
+      "correctIndex": 3,
+      "explanation": "Tslot is 10 ms. A manager's address offsets its token-generation window after Tno_token.",
+      "references": [{ "title": "BACnet Stack MS/TP definitions", "url": "https://github.com/bacnet-stack/bacnet-stack/blob/master/src/bacnet/datalink/mstpdef.h", "locator": "Tslot" }]
+    },
+    {
+      "id": "BAC-117",
+      "category": "MS/TP token and timing",
+      "difficulty": "elite",
+      "prompt": "Which expression gives the start of a fixed-address manager's token-generation window after token loss?",
+      "options": [
+        "Tno_token + (Tslot × this station address)",
+        "Treply_timeout + (Tslot × next station address)",
+        "Tusage_delay × Max_Info_Frames × station address",
+        "Tframe_abort + Tturnaround + one token rotation"
+      ],
+      "correctIndex": 0,
+      "explanation": "The NO_TOKEN state assigns each manager a window beginning at Tno_token + Tslot × TS, where TS is its station address. Lower addresses therefore get earlier recovery opportunities.",
+      "references": [{ "title": "ASHRAE Addendum 135-2004d", "url": "https://www.ashrae.org/file%20library/technical%20resources/standards%20and%20guidelines/standards%20addenda/135-2004_add-d.pdf", "locator": "Addendum 135-2004d-8, NO_TOKEN GenerateToken transition" }]
+    },
+    {
+      "id": "BAC-118",
+      "category": "MS/TP token and timing",
+      "difficulty": "elite",
+      "prompt": "With Tno_token = 500 ms and Tslot = 10 ms, when does station address 37 first enter its token-generation window?",
+      "options": [
+        "At 537 ms after qualifying silence begins",
+        "At 870 ms after qualifying silence begins",
+        "At 3,700 ms after qualifying silence begins",
+        "At 5,000 ms after qualifying silence begins"
+      ],
+      "correctIndex": 1,
+      "explanation": "The start is 500 ms + (10 ms × 37) = 870 ms. A lower-address manager would receive an earlier slot.",
+      "references": [
+        { "title": "ASHRAE Addendum 135-2004d", "url": "https://www.ashrae.org/file%20library/technical%20resources/standards%20and%20guidelines/standards%20addenda/135-2004_add-d.pdf", "locator": "NO_TOKEN GenerateToken formula" },
+        { "title": "BACnet Stack MS/TP definitions", "url": "https://github.com/bacnet-stack/bacnet-stack/blob/master/src/bacnet/datalink/mstpdef.h", "locator": "Tno_token and Tslot" }
+      ]
+    },
+    {
+      "id": "BAC-119",
+      "category": "MS/TP token and timing",
+      "difficulty": "elite",
+      "prompt": "What is the maximum Tusage_delay after receiving a Token or Poll For Master before beginning a frame?",
+      "options": [
+        "5 ms after the previous frame ends",
+        "10 ms after the previous frame ends",
+        "15 ms after the previous frame ends",
+        "20 ms after the prior token or poll frame ends"
+      ],
+      "correctIndex": 2,
+      "explanation": "Tusage_delay is 15 ms: the maximum wait after receiving a token or Poll For Master before transmitting the first octet.",
+      "references": [{ "title": "BACnet Stack MS/TP definitions", "url": "https://github.com/bacnet-stack/bacnet-stack/blob/master/src/bacnet/datalink/mstpdef.h", "locator": "Tusage_delay" }]
+    },
+    {
+      "id": "BAC-120",
+      "category": "MS/TP token and timing",
+      "difficulty": "elite",
+      "prompt": "Which range correctly describes Tusage_timeout for waiting on token use or a Poll For Master reply?",
+      "options": [
+        "At least 5 ms and never more than 10 ms",
+        "At least 10 ms and never more than 15 ms",
+        "At least 15 ms and never more than 40 ms in service",
+        "At least 20 ms and never more than 35 ms"
+      ],
+      "correctIndex": 3,
+      "explanation": "The minimum Tusage_timeout is 20 ms; an implementation may use a larger value, but not more than 35 ms.",
+      "references": [{ "title": "BACnet Stack MS/TP state data", "url": "https://github.com/bacnet-stack/bacnet-stack/blob/master/src/bacnet/datalink/mstp.h", "locator": "Tusage_timeout field documentation" }]
+    },
+    {
+      "id": "BAC-121",
+      "category": "MS/TP token and timing",
+      "difficulty": "elite",
+      "prompt": "What is the maximum Treply_delay for starting either a reply or Reply Postponed after a request frame?",
+      "options": [
+        "250 ms from reception of the request frame",
+        "255 ms from transmission of the request frame",
+        "300 ms from reception of the token frame",
+        "500 ms from the last observed bus activity"
+      ],
+      "correctIndex": 0,
+      "explanation": "A responding node has at most 250 ms to begin a reply or send Reply Postponed after receiving a frame that expects a reply.",
+      "references": [{ "title": "BACnet Stack MS/TP state data", "url": "https://github.com/bacnet-stack/bacnet-stack/blob/master/src/bacnet/datalink/mstp.h", "locator": "Treply_delay field documentation" }]
+    },
+    {
+      "id": "BAC-122",
+      "category": "MS/TP token and timing",
+      "difficulty": "elite",
+      "prompt": "Which limits apply to Treply_timeout while waiting for a station to begin replying to a confirmed request?",
+      "options": [
+        "Minimum 200 ms, with no specified upper bound",
+        "Minimum 255 ms, and an implementation may not exceed 300 ms",
+        "Exactly 250 ms, with no implementation tolerance",
+        "Minimum 500 ms, plus one slot per destination address"
+      ],
+      "correctIndex": 1,
+      "explanation": "Treply_timeout is at least 255 ms. Implementations may wait longer, but the value may not exceed 300 ms.",
+      "references": [{ "title": "BACnet Stack MS/TP state data", "url": "https://github.com/bacnet-stack/bacnet-stack/blob/master/src/bacnet/datalink/mstp.h", "locator": "Treply_timeout field documentation" }]
+    },
+    {
+      "id": "BAC-123",
+      "category": "MS/TP token and timing",
+      "difficulty": "elite",
+      "prompt": "What minimum turnaround interval follows the final stop bit of a received frame before enabling a transmitter?",
+      "options": [
+        "10 bit times after the final received stop bit",
+        "20 bit times after the final received stop bit",
+        "40 bit times after the final received stop bit",
+        "60 bit times after the final received stop bit elapses"
+      ],
+      "correctIndex": 2,
+      "explanation": "Tturnaround is 40 bit times. Because it is expressed in bit times, its wall-clock duration changes with baud rate.",
+      "references": [{ "title": "BACnet Stack MS/TP definitions", "url": "https://github.com/bacnet-stack/bacnet-stack/blob/master/src/bacnet/datalink/mstpdef.h", "locator": "Tturnaround" }]
+    },
+    {
+      "id": "BAC-124",
+      "category": "MS/TP token and timing",
+      "difficulty": "elite",
+      "prompt": "Which statement correctly describes Tframe_abort while a receiver is waiting for the next octet of a frame?",
+      "options": [
+        "It is fixed at 20 bit times for every implementation",
+        "It is fixed at 40 bit times for every implementation",
+        "It starts at 500 ms and has no upper time limit",
+        "It is at least 60 bit times and may not exceed 100 ms"
+      ],
+      "correctIndex": 3,
+      "explanation": "A receiver may discard an interrupted frame after at least 60 bit times of silence; implementations may use a larger timeout, capped at 100 ms.",
+      "references": [{ "title": "BACnet Stack MS/TP state data", "url": "https://github.com/bacnet-stack/bacnet-stack/blob/master/src/bacnet/datalink/mstp.h", "locator": "Tframe_abort field documentation" }]
+    },
+    {
+      "id": "BAC-125",
+      "category": "MS/TP token and timing",
+      "difficulty": "elite",
+      "prompt": "What is the maximum idle interval a transmitting MS/TP node may allow between octets within one frame?",
+      "options": [
+        "20 bit times, defined by Tframe_gap",
+        "40 bit times, defined by Tturnaround",
+        "60 bit times, defined by Tframe_abort",
+        "500 ms, defined by Tno_token"
+      ],
+      "correctIndex": 0,
+      "explanation": "Tframe_gap limits a sender to no more than 20 bit times of idle line between octets of the same frame.",
+      "references": [{ "title": "BACnet Stack MS/TP definitions", "url": "https://github.com/bacnet-stack/bacnet-stack/blob/master/src/bacnet/datalink/mstpdef.h", "locator": "Tframe_gap" }]
+    },
+    {
+      "id": "BAC-126",
+      "category": "MS/TP token and timing",
+      "difficulty": "elite",
+      "prompt": "After how many token uses does the Npoll counter trigger periodic Poll For Master maintenance?",
+      "options": [
+        "25 token uses before the maintenance poll",
+        "50 token uses before the maintenance poll",
+        "100 token uses before the maintenance poll",
+        "127 token uses before the maintenance poll"
+      ],
+      "correctIndex": 1,
+      "explanation": "Npoll is 50. Periodic polling lets a manager discover stations that have joined between it and its known successor.",
+      "references": [{ "title": "BACnet Stack MS/TP definitions", "url": "https://github.com/bacnet-stack/bacnet-stack/blob/master/src/bacnet/datalink/mstpdef.h", "locator": "Npoll" }]
+    },
+    {
+      "id": "BAC-127",
+      "category": "MS/TP token and timing",
+      "difficulty": "elite",
+      "prompt": "How many token retransmission retries does Nretry_token permit before the sender searches for a new successor?",
+      "options": [
+        "Zero retries after the first token transmission",
+        "Two retries after the first token transmission",
+        "One retry after the first token transmission",
+        "Three retries after the first token transmission"
+      ],
+      "correctIndex": 2,
+      "explanation": "Nretry_token is 1. After the permitted retry fails to provoke successor activity, the manager begins searching for a new successor.",
+      "references": [
+        { "title": "BACnet Stack MS/TP definitions", "url": "https://github.com/bacnet-stack/bacnet-stack/blob/master/src/bacnet/datalink/mstpdef.h", "locator": "Nretry_token" },
+        { "title": "ASHRAE Addendum 135-2004d", "url": "https://www.ashrae.org/file%20library/technical%20resources/standards%20and%20guidelines/standards%20addenda/135-2004_add-d.pdf", "locator": "PASS_TOKEN FindNewSuccessor transition" }
+      ]
+    },
+    {
+      "id": "BAC-128",
+      "category": "MS/TP performance engineering",
+      "difficulty": "elite",
+      "prompt": "What does increasing one manager's Max_Info_Frames primarily change on an MS/TP network?",
+      "options": [
+        "It increases the maximum legal differential bus voltage",
+        "It raises the manager's permitted station address range",
+        "It shortens the receiver's EIA-485 common-mode range",
+        "It lets that manager send more information frames per token hold"
+      ],
+      "correctIndex": 3,
+      "explanation": "Max_Info_Frames controls how many information frames that manager may transmit before passing the token, so it can allocate more link bandwidth while increasing token-hold time.",
+      "references": [{ "title": "BACnet Stack MS/TP state data", "url": "https://github.com/bacnet-stack/bacnet-stack/blob/master/src/bacnet/datalink/mstp.h", "locator": "Nmax_info_frames field documentation" }]
+    },
+    {
+      "id": "BAC-129",
+      "category": "MS/TP performance engineering",
+      "difficulty": "elite",
+      "prompt": "Why can setting Max_Master to the highest manager address actually in use improve a compact MS/TP trunk?",
+      "options": [
+        "It avoids polling unused higher addresses and returns bandwidth to normal traffic",
+        "It increases every transceiver's receiver input resistance above one unit load",
+        "It permits subordinate addresses above 254 without adding another network",
+        "It eliminates token passing and converts the segment to collision detection"
+      ],
+      "correctIndex": 0,
+      "explanation": "A correctly reduced Max_Master bounds the Poll For Master search so the ring spends less time probing unused addresses. It must still include the highest manager address present.",
+      "references": [{ "title": "NISTIR 6392 BACnet specification guidance", "url": "https://bacnet.org/wp-content/uploads/sites/4/2022/06/NISTIR-6392.pdf", "locator": "Section 6.3.3, MS/TP MAC addresses and Max_Master" }]
+    },
+    {
+      "id": "BAC-130",
+      "category": "MS/TP frame behavior",
+      "difficulty": "elite",
+      "prompt": "When a station cannot produce a requested response within Treply_delay, what does an MS/TP Reply Postponed frame accomplish?",
+      "options": [
+        "It permanently cancels the request and deletes its transaction state",
+        "It satisfies the immediate data-link timing while indicating the response will come later",
+        "It transfers the token directly to the original requester for an unlimited interval",
+        "It changes the request into an unconfirmed broadcast for every station"
+      ],
+      "correctIndex": 1,
+      "explanation": "Reply Postponed prevents the requester from treating the absence of an immediate response as a link-layer timeout while the actual response is deferred.",
+      "references": [{ "title": "BACnet Stack MS/TP state data", "url": "https://github.com/bacnet-stack/bacnet-stack/blob/master/src/bacnet/datalink/mstp.h", "locator": "ReplyPostponedTimer and Treply_delay documentation" }]
+    },
+    {
+      "id": "BAC-131",
+      "category": "ARC156 token behavior",
+      "difficulty": "elite",
+      "prompt": "How does ARC156 limit a controller's transmission opportunity each time its ARCNET coprocessor receives the token?",
+      "options": [
+        "It may send one data packet, then it must pass the token",
+        "It may retain the token for a configurable Max_Info_Frames count",
+        "It may send until a 250 ms token-hold timer expires",
+        "It may send every queued packet before passing the token"
+      ],
+      "correctIndex": 0,
+      "explanation": "ARC156 permits one data packet per token possession and does not let a controller keep the token. This differs fundamentally from MS/TP Max_Info_Frames behavior.",
+      "references": [{ "title": "Automated Logic ARC156 Wiring Technical Instructions", "url": "https://www.cypressenvirosystems.com/wp-content/uploads/ARC156-Wiring.pdf", "locator": "Page 8, Token passing" }]
+    },
+    {
+      "id": "BAC-132",
+      "category": "ARC156 token behavior",
+      "difficulty": "elite",
+      "prompt": "Why do active ARC156 controllers not need sequential MAC addresses for efficient token passing?",
+      "options": [
+        "Every unused numerical address receives and immediately rejects a separately transmitted token",
+        "The logical token loop includes only controllers that exist on the network",
+        "A BBMD translates sparse MAC addresses into a consecutive sequence",
+        "ARC156 broadcasts every token so no successor relationship exists"
+      ],
+      "correctIndex": 1,
+      "explanation": "The ARCNET coprocessors maintain a logical loop of participating controllers, so the token passes only to controllers that exist rather than polling each numerical gap.",
+      "references": [{ "title": "Automated Logic ARC156 Wiring Technical Instructions", "url": "https://www.cypressenvirosystems.com/wp-content/uploads/ARC156-Wiring.pdf", "locator": "Page 8, Token passing" }]
+    },
+    {
+      "id": "BAC-133",
+      "category": "ARC156 token behavior",
+      "difficulty": "elite",
+      "prompt": "What happens when an ARC156 controller fails to respond when the logical token loop addresses it?",
+      "options": [
+        "It remains in the logical loop and receives unlimited repeated token transmissions",
+        "It becomes the permanent token regeneration controller",
+        "It drops from the loop until a network reconfiguration admits it again",
+        "It forces every controller to change to MS/TP timing immediately"
+      ],
+      "correctIndex": 2,
+      "explanation": "A controller that does not respond to its token is removed from the active loop and does not receive another token until network reconfiguration.",
+      "references": [{ "title": "Automated Logic ARC156 Wiring Technical Instructions", "url": "https://www.cypressenvirosystems.com/wp-content/uploads/ARC156-Wiring.pdf", "locator": "Page 8, Token passing" }]
+    },
+    {
+      "id": "BAC-134",
+      "category": "ARC156 token behavior",
+      "difficulty": "elite",
+      "prompt": "Approximately how long does the ARC156 network reconfiguration process take when rebuilding its participating token loop?",
+      "options": [
+        "About 13 milliseconds under all network loads",
+        "About 50 milliseconds for each unused MAC address",
+        "About 500 milliseconds, identical to MS/TP Tno_token",
+        "About 3 seconds for the network reconfiguration"
+      ],
+      "correctIndex": 3,
+      "explanation": "The ARC156 wiring guidance states that a network reconfiguration takes about three seconds.",
+      "references": [{ "title": "Automated Logic ARC156 Wiring Technical Instructions", "url": "https://www.cypressenvirosystems.com/wp-content/uploads/ARC156-Wiring.pdf", "locator": "Page 8, Token passing" }]
+    },
+    {
+      "id": "BAC-135",
+      "category": "ARC156 token behavior",
+      "difficulty": "elite",
+      "prompt": "When does an operating ARC156 controller initiate network reconfiguration because it has stopped seeing the token?",
+      "options": [
+        "After about 13 seconds without receiving the token",
+        "After exactly 500 milliseconds without receiving any valid network octet",
+        "After 50 token rotations without Poll For Master",
+        "After one failed BACnet confirmed service request"
+      ],
+      "correctIndex": 0,
+      "explanation": "A newly powered controller, or one that has not received the token for about 13 seconds, initiates ARC156 network reconfiguration.",
+      "references": [{ "title": "Automated Logic ARC156 Wiring Technical Instructions", "url": "https://www.cypressenvirosystems.com/wp-content/uploads/ARC156-Wiring.pdf", "locator": "Page 8, Token passing" }]
+    },
+    {
+      "id": "BAC-136",
+      "category": "BACnet/Ethernet architecture",
+      "difficulty": "elite",
+      "prompt": "Which protocol pairing defines native BACnet/Ethernet in BACnet’s collapsed architecture?",
+      "options": [
+        "BVLL over UDP and IPv4, followed by an Ethernet II payload",
+        "ISO 8802-2 Type 1 logical-link control over ISO 8802-3 Ethernet",
+        "MS/TP framing over an EIA-485 physical Ethernet segment",
+        "Secure Connect BVLL directly over IEEE 802.3 Ethernet without WebSockets or any TLS transport"
+      ],
+      "correctIndex": 1,
+      "explanation": "Native BACnet/Ethernet uses ISO 8802-2 Type 1 over ISO 8802-3. BACnet/IP is a separate datalink using BVLL, UDP, and IP.",
+      "references": [
+        {
+          "title": "ANSI/ASHRAE Addendum bj to Standard 135-2016",
+          "url": "https://bacnet.org/wp-content/uploads/sites/4/2022/08/Add-135-2016bj.pdf",
+          "locator": "Clause 4.1, Figure 4-2, Table 6-1, and network/router definitions"
+        }
+      ]
+    },
+    {
+      "id": "BAC-137",
+      "category": "BACnet/Ethernet frame engineering",
+      "difficulty": "elite",
+      "prompt": "What maximum NPDU length does BACnet specify for the native ISO 8802-3 Ethernet datalink?",
+      "options": [
+        "501 octets, matching the original ARCNET NPDU constraint",
+        "1500 octets, consuming the Ethernet data field without LLC overhead",
+        "1497 octets, with three octets reserved for LLC",
+        "1476 octets, reserving space for UDP, IPv4, and BVLL headers"
+      ],
+      "correctIndex": 2,
+      "explanation": "Table 6-1 specifies a 1497-octet maximum NPDU for native BACnet/Ethernet. The three-octet LLC header occupies the remainder of the conventional 1500-octet Ethernet data field.",
+      "references": [
+        {
+          "title": "ANSI/ASHRAE Addendum bj to Standard 135-2016",
+          "url": "https://bacnet.org/wp-content/uploads/sites/4/2022/08/Add-135-2016bj.pdf",
+          "locator": "Clause 4.1, Figure 4-2, Table 6-1, and network/router definitions"
+        }
+      ]
+    },
+    {
+      "id": "BAC-138",
+      "category": "BACnet/Ethernet addressing",
+      "difficulty": "elite",
+      "prompt": "Which destination MAC address carries a local BACnet broadcast on native BACnet/Ethernet?",
+      "options": [
+        "00:00:00:00:00:00, the unspecified Ethernet station address",
+        "01:00:5E:BA:C0:00, multicast derived from the BACnet UDP port",
+        "The IPv4 subnet broadcast translated to an Ethernet address by ARP",
+        "FF:FF:FF:FF:FF:FF, the all-stations broadcast address"
+      ],
+      "correctIndex": 3,
+      "explanation": "Native BACnet/Ethernet uses the six-octet Ethernet broadcast MAC address FF:FF:FF:FF:FF:FF. This local datalink broadcast does not require IP or a BBMD.",
+      "references": [
+        {
+          "title": "ANSI/ASHRAE Addendum bx to Standard 135-2020",
+          "url": "https://bacnet.org/wp-content/uploads/sites/4/2024/10/135_2020_bx_20240930.pdf",
+          "locator": "Clause 6.3.2, Broadcast Messages"
+        }
+      ]
+    },
+    {
+      "id": "BAC-139",
+      "category": "BACnet/Ethernet internetworking",
+      "difficulty": "elite",
+      "prompt": "Two native BACnet/Ethernet segments are joined by transparent Ethernet bridges and retain one BACnet network number. How does BACnet classify the result?",
+      "options": [
+        "One BACnet network containing multiple bridged segments",
+        "Two BACnet networks because each Ethernet bridge creates a network boundary",
+        "One BACnet/IP network because bridges automatically insert BVLL and UDP headers",
+        "A BACnet internetwork requiring every bridge to advertise an independent DNET"
+      ],
+      "correctIndex": 0,
+      "explanation": "BACnet defines a network as one or more segments interconnected by bridges with the same network address. A BACnet router connects distinct BACnet networks.",
+      "references": [
+        {
+          "title": "ANSI/ASHRAE Addendum bj to Standard 135-2016",
+          "url": "https://bacnet.org/wp-content/uploads/sites/4/2022/08/Add-135-2016bj.pdf",
+          "locator": "Clause 4.1, Figure 4-2, Table 6-1, and network/router definitions"
+        }
+      ]
+    },
+    {
+      "id": "BAC-140",
+      "category": "BACnet/Ethernet packet analysis",
+      "difficulty": "elite",
+      "prompt": "Which capture signature identifies native BACnet/Ethernet rather than BACnet/IP carried over Ethernet?",
+      "options": [
+        "Ethernet II with IPv4, UDP port BAC0, and a BVLC header before the NPDU",
+        "IEEE 802.3 length framing, then BACnet LLC and the NPDU",
+        "An IEEE 802.1Q tag followed directly by an MS/TP preamble and token frame",
+        "An ARP payload resolving a BACnet device instance directly to an Ethernet MAC"
+      ],
+      "correctIndex": 1,
+      "explanation": "Native BACnet/Ethernet carries the NPDU directly through IEEE 802.2 LLC over IEEE 802.3. BACnet/IP adds BVLL, UDP, and IP encapsulation.",
+      "references": [
+        {
+          "title": "ANSI/ASHRAE Addendum bj to Standard 135-2016",
+          "url": "https://bacnet.org/wp-content/uploads/sites/4/2022/08/Add-135-2016bj.pdf",
+          "locator": "Clause 4.1, Figure 4-2, Table 6-1, and network/router definitions"
+        }
+      ]
+    },
+    {
+      "id": "BAC-141",
+      "category": "IPv4 packet engineering",
+      "difficulty": "elite",
+      "prompt": "In an IPv4 fragment header, what unit does the 13-bit Fragment Offset field use?",
+      "options": [
+        "Individual bits measured from the beginning of the complete Ethernet preamble",
+        "Four-octet words measured from the IPv4 header",
+        "Eight-octet units measured within the original IP payload",
+        "Whole Ethernet frames measured from the first fragment"
+      ],
+      "correctIndex": 2,
+      "explanation": "IPv4 Fragment Offset is expressed in eight-octet units. Consequently, every fragment except the final fragment must end on an eight-octet payload boundary.",
+      "references": [{ "title": "RFC 791: Internet Protocol", "url": "https://www.rfc-editor.org/rfc/rfc791.html", "locator": "Fragment Offset and fragmentation procedure" }]
+    },
+    {
+      "id": "BAC-142",
+      "category": "UDP packet engineering",
+      "difficulty": "elite",
+      "prompt": "What does an all-zero UDP checksum field mean in an IPv4 UDP datagram under RFC 768?",
+      "options": [
+        "The computed checksum was zero and must remain encoded as zero",
+        "The UDP payload contains exactly zero data octets",
+        "The IPv4 header checksum also covers the UDP payload",
+        "The transmitter generated no UDP checksum for that datagram"
+      ],
+      "correctIndex": 3,
+      "explanation": "For IPv4 UDP, an all-zero transmitted checksum indicates that no UDP checksum was generated. A computed checksum result of zero is transmitted as all ones instead.",
+      "references": [{ "title": "RFC 768: User Datagram Protocol", "url": "https://www.rfc-editor.org/rfc/rfc768.html", "locator": "Checksum field" }]
+    },
+    {
+      "id": "BAC-143",
+      "category": "UDP packet engineering",
+      "difficulty": "elite",
+      "prompt": "Which fields are included in the IPv4 UDP checksum pseudo-header to help detect misdelivery?",
+      "options": [
+        "Source IP, destination IP, zero, protocol number, and UDP length",
+        "Source MAC, destination MAC, VLAN ID, and Ethernet FCS",
+        "IPv4 TTL, header checksum, fragment offset, and DSCP",
+        "BACnet network number, hop count, invoke ID, and APDU length"
+      ],
+      "correctIndex": 0,
+      "explanation": "The UDP pseudo-header contains the IPv4 source and destination addresses, a zero octet, protocol number, and UDP length; it is checksummed with the UDP header and data.",
+      "references": [{ "title": "RFC 768: User Datagram Protocol", "url": "https://www.rfc-editor.org/rfc/rfc768.html", "locator": "Checksum pseudo-header" }]
+    },
+    {
+      "id": "BAC-144",
+      "category": "UDP packet engineering",
+      "difficulty": "elite",
+      "prompt": "What is the smallest valid value of the UDP Length field?",
+      "options": [
+        "Four octets for the source and destination ports only",
+        "Eight octets for the UDP header with no payload",
+        "Twenty octets because UDP inherits the IPv4 header length",
+        "Forty-six octets to satisfy Ethernet payload padding"
+      ],
+      "correctIndex": 1,
+      "explanation": "UDP Length includes the eight-octet UDP header plus its data, so a header-only UDP datagram has a Length value of eight.",
+      "references": [{ "title": "RFC 768: User Datagram Protocol", "url": "https://www.rfc-editor.org/rfc/rfc768.html", "locator": "Length field" }]
+    },
+    {
+      "id": "BAC-145",
+      "category": "IPv4 packet engineering",
+      "difficulty": "elite",
+      "prompt": "What must an IPv4 forwarding module do to the Time To Live field while processing a datagram?",
+      "options": [
+        "Leave TTL unchanged unless the datagram is fragmented",
+        "Increase TTL by one to account for forwarding latency",
+        "Decrease TTL by at least one and destroy the datagram at zero",
+        "Replace TTL with the Ethernet switch hop count"
+      ],
+      "correctIndex": 2,
+      "explanation": "RFC 791 requires every processing module to reduce TTL by at least one; a datagram whose TTL reaches zero is destroyed, bounding routing loops.",
+      "references": [{ "title": "RFC 791: Internet Protocol", "url": "https://www.rfc-editor.org/rfc/rfc791.html", "locator": "Time to Live field" }]
+    },
+    {
+      "id": "BAC-146",
+      "category": "IPv4 packet engineering",
+      "difficulty": "elite",
+      "prompt": "A router receives an IPv4 datagram larger than the outgoing MTU with Don't Fragment set. What is the standards-based outcome?",
+      "options": [
+        "The router clears DF and fragments the datagram normally",
+        "The router converts the datagram into multiple UDP messages",
+        "The router pads the Ethernet frame to the next supported MTU",
+        "The router discards it and can report fragmentation needed by ICMP"
+      ],
+      "correctIndex": 3,
+      "explanation": "DF prohibits router fragmentation. When the next-hop MTU is too small, the datagram is discarded; ICMP Destination Unreachable, fragmentation needed, supports path-MTU handling.",
+      "references": [
+        { "title": "RFC 791: Internet Protocol", "url": "https://www.rfc-editor.org/rfc/rfc791.html", "locator": "Don't Fragment behavior" },
+        { "title": "RFC 792: Internet Control Message Protocol", "url": "https://www.rfc-editor.org/rfc/rfc792.html", "locator": "Destination Unreachable, fragmentation needed" }
+      ]
+    },
+    {
+      "id": "BAC-147",
+      "category": "BACnet/IP BVLL encoding",
+      "difficulty": "elite",
+      "prompt": "Which BVLC function code identifies an Original-Unicast-NPDU in classic BACnet/IPv4?",
+      "options": [
+        "0x0A, carrying a directed BACnet NPDU",
+        "0x0B, carrying a local BACnet broadcast",
+        "0x09, requesting BBMD broadcast distribution",
+        "0x04, forwarding an NPDU from a BBMD"
+      ],
+      "correctIndex": 0,
+      "explanation": "Classic BACnet/IP uses BVLC function 0x0A for Original-Unicast-NPDU. The BVLC header preserves the datalink delivery mode for the BACnet stack.",
+      "references": [{ "title": "ASHRAE Addendum 135-1995a", "url": "https://bacnet.org/wp-content/uploads/sites/4/2022/08/Add-1995-135a.pdf", "locator": "Clause J.2.11, Original-Unicast-NPDU" }]
+    },
+    {
+      "id": "BAC-148",
+      "category": "BACnet/IP BVLL encoding",
+      "difficulty": "elite",
+      "prompt": "Which BVLC function code identifies an Original-Broadcast-NPDU in classic BACnet/IPv4?",
+      "options": [
+        "0x0A, the directed Original-Unicast-NPDU function",
+        "0x0B, the local Original-Broadcast-NPDU function",
+        "0x08, the Delete-Foreign-Device-Table-Entry function",
+        "0x05, the Register-Foreign-Device function"
+      ],
+      "correctIndex": 1,
+      "explanation": "BVLC function 0x0B marks an Original-Broadcast-NPDU sent by a non-foreign B/IP device or router to the B/IP broadcast address.",
+      "references": [{ "title": "ASHRAE Addendum 135-1995a", "url": "https://bacnet.org/wp-content/uploads/sites/4/2022/08/Add-1995-135a.pdf", "locator": "Clause J.2.12, Original-Broadcast-NPDU" }]
+    },
+    {
+      "id": "BAC-149",
+      "category": "BACnet/IP BVLL encoding",
+      "difficulty": "elite",
+      "prompt": "What one-octet BVLC Type value identifies classic BACnet/IPv4 BVLL messages?",
+      "options": [
+        "0x01, matching the BACnet NPDU protocol version",
+        "0x82, matching the BACnet LLC service access point",
+        "0x81, identifying the BVLL for BACnet/IPv4",
+        "0xBAC0, matching the default UDP port"
+      ],
+      "correctIndex": 2,
+      "explanation": "The classic BACnet/IP BVLC header begins with the one-octet type value 0x81. The default UDP port 0xBAC0 is a separate transport-layer value.",
+      "references": [{ "title": "ASHRAE Addendum 135-1995a", "url": "https://bacnet.org/wp-content/uploads/sites/4/2022/08/Add-1995-135a.pdf", "locator": "Clause J.2 BVLL message formats" }]
+    },
+    {
+      "id": "BAC-150",
+      "category": "IPv4 broadcast behavior",
+      "difficulty": "elite",
+      "prompt": "What is the required default behavior for an IP router receiving an IPv4 directed broadcast under RFC 2644?",
+      "options": [
+        "Forward every directed broadcast to preserve legacy discovery",
+        "Convert it to multicast before forwarding to the destination subnet",
+        "Forward it only when the UDP destination port is 47808",
+        "Disable directed-broadcast forwarding by default"
+      ],
+      "correctIndex": 3,
+      "explanation": "RFC 2644 changed router requirements so directed-broadcast forwarding is disabled by default, limiting amplification attacks. BACnet broadcast distribution therefore cannot assume ordinary routers forward it.",
+      "references": [{ "title": "RFC 2644: Changing the Default for Directed Broadcasts in Routers", "url": "https://www.rfc-editor.org/rfc/rfc2644.html", "locator": "Section 2, router requirements" }]
+    },
+    {
+      "id": "BAC-151",
+      "category": "Ethernet frame engineering",
+      "difficulty": "elite",
+      "prompt": "Which EtherType identifies an IPv4 datagram carried directly in an Ethernet II frame?",
+      "options": [
+        "0x0800 for Internet Protocol version 4",
+        "0x8100 for an IEEE 802.1Q customer VLAN tag",
+        "0x86DD for Internet Protocol version 6",
+        "0x0806 for the Address Resolution Protocol"
+      ],
+      "correctIndex": 0,
+      "explanation": "RFC 894 specifies EtherType 0x0800 for IPv4 over Ethernet. The other values identify VLAN tagging, IPv6, and ARP respectively.",
+      "references": [{ "title": "RFC 894: IP Datagrams over Ethernet Networks", "url": "https://www.rfc-editor.org/rfc/rfc894.html", "locator": "Frame Format" }]
+    },
+    {
+      "id": "BAC-152",
+      "category": "Ethernet frame engineering",
+      "difficulty": "elite",
+      "prompt": "How is an IPv4 packet shorter than Ethernet's 46-octet minimum data field carried?",
+      "options": [
+        "The IPv4 Total Length is increased to include arbitrary application data",
+        "The Ethernet data field is padded, but the padding is outside IP Total Length",
+        "The frame is transmitted below the minimum because IPv4 is exempt",
+        "The UDP checksum bytes are repeated until the frame reaches 46 octets"
+      ],
+      "correctIndex": 1,
+      "explanation": "Ethernet padding brings the data field to 46 octets, but that padding is not part of the IPv4 packet and is excluded from the IP Total Length field.",
+      "references": [{ "title": "RFC 894: IP Datagrams over Ethernet Networks", "url": "https://www.rfc-editor.org/rfc/rfc894.html", "locator": "Minimum data field and padding" }]
+    },
+    {
+      "id": "BAC-153",
+      "category": "Ethernet frame engineering",
+      "difficulty": "elite",
+      "prompt": "What standard Ethernet MTU limits an unfragmented IPv4 datagram carried using Ethernet II encapsulation?",
+      "options": [
+        "1,492 octets after reserving an eight-octet LLC/SNAP header",
+        "1,518 octets including Ethernet addresses and frame check sequence",
+        "1,500 octets of Ethernet payload available to the IPv4 datagram",
+        "1,522 octets because every IPv4 frame contains an 802.1Q tag"
+      ],
+      "correctIndex": 2,
+      "explanation": "The conventional Ethernet MTU exposed to IPv4 is 1,500 octets. Ethernet header, optional tag, and FCS accounting are outside that IP MTU.",
+      "references": [{ "title": "RFC 894: IP Datagrams over Ethernet Networks", "url": "https://www.rfc-editor.org/rfc/rfc894.html", "locator": "Maximum IP datagram length; see verified errata 570" }]
+    },
+    {
+      "id": "BAC-154",
+      "category": "IEEE 802.1Q engineering",
+      "difficulty": "elite",
+      "prompt": "How much does one IEEE 802.1Q customer VLAN tag add to the Ethernet MAC frame?",
+      "options": [
+        "One octet inserted before the destination address",
+        "Two octets replacing the original EtherType field",
+        "Eight octets appended after the frame check sequence",
+        "Four octets inserted after the source MAC address"
+      ],
+      "correctIndex": 3,
+      "explanation": "An 802.1Q tag is 32 bits, or four octets, and is inserted after the source MAC address before the original type/length information.",
+      "references": [{ "title": "IEEE 802.1 VLAN tagging tutorial", "url": "https://www.ieee802.org/1/ecsg-linksec/meetings/Mar03/finn_tutorial_1_0303.pdf", "locator": "802.1Q VLAN Tags" }]
+    },
+    {
+      "id": "BAC-155",
+      "category": "IEEE 802.1Q engineering",
+      "difficulty": "elite",
+      "prompt": "Which Tag Protocol Identifier normally marks an IEEE 802.1Q customer VLAN tag?",
+      "options": [
+        "0x8100 in the tag protocol identifier field",
+        "0x0800 in the tag control information field",
+        "0xBAC0 in the priority code point field",
+        "0xFFFF in the VLAN identifier field"
+      ],
+      "correctIndex": 0,
+      "explanation": "The customer VLAN tag TPID is 0x8100. It identifies the following tag control information rather than an IPv4 payload.",
+      "references": [{ "title": "IEEE 802.1 Priority and VLAN Tagging", "url": "https://www.ieee802.org/1/files/public/docs2009/ba-cgunther-vlan-tagging-0309.pdf", "locator": "802.1Q tag format" }]
+    },
+    {
+      "id": "BAC-156",
+      "category": "IEEE 802.1Q engineering",
+      "difficulty": "elite",
+      "prompt": "How is the 16-bit 802.1Q Tag Control Information field divided?",
+      "options": [
+        "Eight priority bits followed by eight VLAN bits",
+        "Three PCP bits, one DEI bit, and twelve VID bits",
+        "Four EtherType bits followed by twelve checksum bits",
+        "One broadcast bit, seven priority bits, and eight port bits"
+      ],
+      "correctIndex": 1,
+      "explanation": "The TCI contains a three-bit Priority Code Point, one Drop Eligible Indicator bit, and a twelve-bit VLAN Identifier.",
+      "references": [{ "title": "IEEE 802 Privacy Threat Analysis", "url": "https://www.ieee802.org/1/files/public/docs2016/802E-weis-privacy-threat-analysis-0718-v01.pdf", "locator": "Section 5.2.3, VLAN TCI format" }]
+    },
+    {
+      "id": "BAC-157",
+      "category": "Ethernet frame engineering",
+      "difficulty": "elite",
+      "prompt": "What maximum basic MAC frame sizes distinguish an untagged Ethernet frame from a singly tagged frame?",
+      "options": [
+        "1,500 untagged and 1,504 tagged, excluding every MAC header field",
+        "1,514 untagged and 1,518 tagged, excluding the frame check sequence",
+        "1,518 untagged and 1,522 tagged, including the frame check sequence",
+        "1,522 untagged and 1,526 tagged, including preamble and interpacket gap"
+      ],
+      "correctIndex": 2,
+      "explanation": "The standard basic MAC frame maximum is 1,518 octets untagged and 1,522 octets with one VLAN tag, counting the FCS but not preamble or interpacket gap.",
+      "references": [{ "title": "IEEE 802.3 Frame Size Study", "url": "https://www.ieee802.org/3/frame_study/0409/daines_3_0409.pdf", "locator": "Frame sizes table" }]
+    },
+    {
+      "id": "BAC-158",
+      "category": "BACnet/Ethernet encoding",
+      "difficulty": "elite",
+      "prompt": "Which LLC service access point value is assigned to BACnet for both DSAP and SSAP?",
+      "options": [
+        "0x81, also used as the classic BACnet/IP BVLC type",
+        "0xCD, the BACnet ARCNET system code",
+        "0x03, the unnumbered-information LLC control value",
+        "0x82 for both the destination and source service access points"
+      ],
+      "correctIndex": 3,
+      "explanation": "BACnet's IEEE 802.2 logical-link service access point is 0x82 for both DSAP and SSAP. The control field is a separate LLC field.",
+      "references": [{ "title": "BACnet Committee Encoding Examples", "url": "https://bacnet.org/wp-content/uploads/sites/4/2022/08/Encoding.pdf", "locator": "BACnet LLC SSAP and DSAP values" }]
+    },
+    {
+      "id": "BAC-159",
+      "category": "Ethernet address resolution",
+      "difficulty": "elite",
+      "prompt": "What does ARP resolve before IPv4 traffic can be sent to an on-link next hop over Ethernet?",
+      "options": [
+        "The next-hop IPv4 address to its 48-bit Ethernet hardware address",
+        "The BACnet Device instance to its BACnet network number",
+        "The UDP destination port to an IEEE 802.1Q VLAN ID",
+        "The remote subnet mask to an Ethernet frame check sequence"
+      ],
+      "correctIndex": 0,
+      "explanation": "ARP maps the protocol address selected as the local next hop to the 48-bit Ethernet address needed for link-layer delivery.",
+      "references": [{ "title": "RFC 826: An Ethernet Address Resolution Protocol", "url": "https://www.rfc-editor.org/rfc/rfc826.html", "locator": "Packet generation and address resolution" }]
+    },
+    {
+      "id": "BAC-160",
+      "category": "Ethernet frame engineering",
+      "difficulty": "elite",
+      "prompt": "How can a receiver distinguish an IEEE 802.3 Length field from an Ethernet II EtherType in the same header position?",
+      "options": [
+        "Length values are above 0x8000 while EtherTypes are below 64",
+        "A value at or below 1500 is a length; valid EtherTypes are greater than 1500",
+        "The destination MAC multicast bit selects between length and type",
+        "Only the presence of an IPv4 checksum distinguishes the two formats"
+      ],
+      "correctIndex": 1,
+      "explanation": "The shared two-octet field is interpreted as an IEEE 802.3 length when it is 1500 or less; assigned EtherType values occupy the range above 1500.",
+      "references": [{ "title": "RFC 1122: Requirements for Internet Hosts", "url": "https://www.rfc-editor.org/rfc/rfc1122.html", "locator": "Section 2.3.3, Ethernet and IEEE 802 encapsulation" }]
     }
   ]
 }

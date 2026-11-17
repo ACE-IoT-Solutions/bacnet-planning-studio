@@ -10,6 +10,7 @@ export const QUIZ_RESULTS_ENDPOINT = __QUIZ_RESULTS_ENDPOINT__;
 
 export interface QuizResultPayload {
   version: 1;
+  mode: 'standard' | 'elite';
   sessionId: string;
   email: string;
   consentAt: string;
@@ -67,6 +68,7 @@ export function buildQuizResultPayload(
   });
   return {
     version: 1,
+    mode: session.mode,
     sessionId: session.sessionId,
     email: normalizeQuizEmail(participant.email),
     consentAt: participant.consentAt,

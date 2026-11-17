@@ -8,6 +8,8 @@ import {
   BACNET_QUIZ_SESSION_KEY,
   bacnetQuizQuestions,
   bacnetQuizQuestionById,
+  eliteQuizQuestions,
+  standardQuizQuestions,
   type QuizProgress,
   type QuizSession
 } from '../lib/bacnet-quiz';
@@ -137,7 +139,7 @@ describe('QuizPage', () => {
     const wrapper = mount(QuizPage);
     expect(wrapper.text()).toContain('Results storage confirmed');
     expect(wrapper.text()).toContain('86% · Quiz complete');
-    expect(wrapper.text()).toContain('Unlock at 100 / 100 mastered');
+    expect(wrapper.text()).toContain(`Unlock at ${standardQuizQuestions.length} / ${standardQuizQuestions.length} standard questions mastered`);
     expect(wrapper.find('[data-testid="copy-mastery-badge"]').exists()).toBe(false);
 
     await wrapper.get('[data-testid="copy-quiz-badge"]').trigger('click');
@@ -163,7 +165,7 @@ describe('QuizPage', () => {
     expect(wrapper.text()).toContain('Badge PNG downloaded.');
   });
 
-  it('unlocks a separate mastery badge after all 100 questions are answered correctly', async () => {
+  it('unlocks a separate mastery badge after the full question bank is answered correctly', async () => {
     const questions = bacnetQuizQuestions.slice(0, 35);
     values.set(BACNET_QUIZ_PROGRESS_KEY, JSON.stringify({
       version: 1,
@@ -183,11 +185,23 @@ describe('QuizPage', () => {
     }));
 
     const wrapper = mount(QuizPage);
-    expect(wrapper.text()).toContain('100% · Question bank mastered');
+    expect(wrapper.text()).toContain('100% · Standard bank mastered');
     await wrapper.get('[data-testid="copy-mastery-badge"]').trigger('click');
     await flushPromises();
 
-    expect(writeText.mock.calls[0][0]).toContain('100/100 Question Bank Mastery');
-    expect(writeText.mock.calls[0][0]).toContain('all 100 questions');
+    expect(writeText.mock.calls[0][0]).toContain(`${standardQuizQuestions.length}/${standardQuizQuestions.length} Standard Question Bank Mastery`);
+    expect(writeText.mock.calls[0][0]).toContain(`all ${standardQuizQuestions.length} standard questions`);
+  });
+
+  it('offers an optional elite mode with an elite-only question draw', async () => {
+    const wrapper = mount(QuizPage);
+    const eliteButton = wrapper.findAll('.quiz-mode-selector button').find(button => button.text().includes('Elite'))!;
+    await eliteButton.trigger('click');
+
+    const session = JSON.parse(values.get(BACNET_QUIZ_SESSION_KEY)!) as QuizSession;
+    expect(session.mode).toBe('elite');
+    expect(session.questionIds).toHaveLength(35);
+    expect(session.questionIds.every(id => eliteQuizQuestions.some(question => question.id === id))).toBe(true);
+    expect(wrapper.text()).toContain(`35 from ${eliteQuizQuestions.length}`);
   });
 });
